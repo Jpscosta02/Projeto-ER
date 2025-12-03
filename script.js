@@ -1,12 +1,23 @@
-// ========== VARIÁVEIS ==========
-let cadastros = [];
-let aniversariantes = [];
-let eventos = [];
-let stats = {};
+// ========== CONFIGURAÇÃO DA API ==========
+const API_URL = 'http://localhost:3001/api';
 
-// ========== FUNÇÕES DE INICIALIZAÇÃO ==========
+// ========== DADOS LOCAIS ==========
+let paroquianos = [];
+let celebracoes = [];
+let sacramentos = [];
+let celebrantes = [];
+let aniversariantes = [];
+
+let stats = {
+    paroquianos: 0,
+    celebracoes: 0,
+    sacramentos: 0,
+    celebrantes: 0
+};
+
+// ========== INICIALIZAÇÃO ==========
 window.addEventListener('DOMContentLoaded', () => {
-    buscarDadosBackend(); // carrega tudo da BD ao iniciar
+    buscarDadosBackend();
 });
 
 // ========== SIDEBAR ==========
@@ -37,46 +48,37 @@ function setActiveMenu(element) {
 
 // ========== ESTATÍSTICAS ==========
 function carregarStats() {
-    document.getElementById('stat-membros').textContent = stats.membros;
-    document.getElementById('stat-congregados').textContent = stats.congregados;
-    document.getElementById('stat-nao-batizados').textContent = stats.nao_batizados;
-    document.getElementById('stat-batizados').textContent = stats.batizados;
+    document.getElementById('stat-paroquianos').textContent = stats.paroquianos;
+    document.getElementById('stat-celebracoes').textContent = stats.celebracoes;
+    document.getElementById('stat-sacramentos').textContent = stats.sacramentos;
+    document.getElementById('stat-celebrantes').textContent = stats.celebrantes;
 }
 
-// ========== CADASTROS ==========
-function carregarCadastros() {
-    const tbody = document.getElementById('table-cadastros');
+// ========== PAROQUIANOS ==========
+function carregarParoquianos() {
+    const tbody = document.getElementById('table-paroquianos');
     tbody.innerHTML = '';
-    
-    cadastros.forEach(pessoa => {
+    const paroquianosRecentes = paroquianos.slice(-5).reverse();
+    paroquianosRecentes.forEach(pessoa => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${pessoa.nome}</td>
-            <td class="text-gray">${pessoa.contato}</td>
+            <td class="text-gray">${pessoa.contacto || 'N/A'}</td>
         `;
         tbody.appendChild(tr);
     });
-}
-
-async function adicionarCadastro(nome, contato) {
-    const response = await fetch(`${API_URL}/membros`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, contato })
-    });
-    const novoCadastro = await response.json();
-    cadastros.push(novoCadastro);
-    carregarCadastros();
-    carregarStats();
 }
 
 // ========== ANIVERSARIANTES ==========
 function carregarAniversariantes() {
     const tbody = document.getElementById('table-aniversariantes');
     tbody.innerHTML = '';
-    
-    aniversariantes.sort((a, b) => a.dia - b.dia);
-    
+    if (aniversariantes.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="3" style="text-align: center; color: #6b7280;">Sem aniversariantes este mês</td>`;
+        tbody.appendChild(tr);
+        return;
+    }
     aniversariantes.forEach(pessoa => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -88,98 +90,123 @@ function carregarAniversariantes() {
     });
 }
 
-async function adicionarAniversariante(dia, nome, idade) {
-    const response = await fetch(`${API_URL}/aniversariantes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dia, nome, idade })
-    });
-    const novoAniversariante = await response.json();
-    aniversariantes.push(novoAniversariante);
-    carregarAniversariantes();
-}
-
-// ========== EVENTOS ==========
-function carregarEventos() {
-    const container = document.getElementById('eventos-container');
+// ========== CELEBRAÇÕES ==========
+function carregarCelebracoes() {
+    const container = document.getElementById('celebracoes-container');
     container.innerHTML = '';
-    
-    eventos.forEach(evento => {
-        const eventoDiv = document.createElement('div');
-        eventoDiv.className = 'evento-card';
-        eventoDiv.innerHTML = `
+    if (celebracoes.length === 0) {
+        container.innerHTML = '<p style="padding: 16px; text-align: center; color: #6b7280;">Sem celebrações agendadas</p>';
+        return;
+    }
+    celebracoes.forEach(celebracao => {
+        const data = new Date(celebracao.data);
+        const mes = data.toLocaleString('pt-PT', { month: 'short' }).toUpperCase();
+        const dia = data.getDate();
+        const celebracaoDiv = document.createElement('div');
+        celebracaoDiv.className = 'evento-card';
+        celebracaoDiv.innerHTML = `
             <div class="evento-date">
-                <div class="mes">${evento.mes}</div>
-                <div class="dia">${evento.dia}</div>
+                <div class="mes">${mes}</div>
+                <div class="dia">${dia}</div>
             </div>
             <div class="evento-info">
-                <h4>${evento.titulo}</h4>
-                <p>${evento.hora}</p>
-                <span class="evento-tag">${evento.tag}</span>
+                <h4>${celebracao.tipo}</h4>
+                <p>${celebracao.hora} - ${celebracao.local}</p>
+                <span class="evento-tag">${celebracao.celebrante_nome || 'Celebrante não definido'}</span>
             </div>
         `;
-        container.appendChild(eventoDiv);
+        container.appendChild(celebracaoDiv);
     });
-}
-
-async function adicionarEvento(mes, dia, titulo, hora, tag) {
-    const response = await fetch(`${API_URL}/eventos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            titulo,
-            data_evento: `2025-${mes}-${dia}`, // ajustar formato conforme BD
-            hora_evento: hora,
-            tipo_nome: tag
-        })
-    });
-    const novoEvento = await response.json();
-    eventos.push({
-        mes: new Date(novoEvento.data_evento).toLocaleString('pt-BR', { month: 'short' }).toUpperCase(),
-        dia: new Date(novoEvento.data_evento).getDate(),
-        titulo: novoEvento.titulo,
-        hora: novoEvento.hora_evento,
-        tag: novoEvento.tipo_nome
-    });
-    carregarEventos();
 }
 
 // ========== INTEGRAÇÃO COM BACKEND ==========
-const API_URL = 'http://localhost:3001/api';
-
 async function buscarDadosBackend() {
     try {
-        const statsResponse = await fetch(`${API_URL}/stats`);
-        if (statsResponse.ok) {
-            stats = await statsResponse.json();
+        await buscarStats();
+        await buscarParoquianos();
+        await buscarCelebracoes();
+        await buscarAniversariantes();
+        await buscarCelebrantes();
+        await buscarSacramentos();
+        console.log('Dados carregados com sucesso do backend!');
+    } catch (error) {
+        console.error('Erro ao conectar ao backend:', error);
+        alert('Não foi possível conectar ao servidor. Verifique se o backend está a correr.');
+    }
+}
+
+async function buscarStats() {
+    try {
+        const response = await fetch(`${API_URL}/stats`);
+        if (response.ok) {
+            stats = await response.json();
             carregarStats();
         }
-        
-        const membrosResponse = await fetch(`${API_URL}/membros`);
-        if (membrosResponse.ok) {
-            cadastros = await membrosResponse.json();
-            carregarCadastros();
+    } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+    }
+}
+
+async function buscarParoquianos() {
+    try {
+        const response = await fetch(`${API_URL}/paroquianos`);
+        if (response.ok) {
+            paroquianos = await response.json();
+            carregarParoquianos();
         }
-        
-        const eventosResponse = await fetch(`${API_URL}/eventos`);
-        if (eventosResponse.ok) {
-            const eventosData = await eventosResponse.json();
-            eventos = eventosData.map(e => ({
-                mes: new Date(e.data_evento).toLocaleString('pt-BR', { month: 'short' }).toUpperCase(),
-                dia: new Date(e.data_evento).getDate(),
-                titulo: e.titulo,
-                hora: e.hora_evento,
-                tag: e.tipo_nome || 'Evento'
-            }));
-            carregarEventos();
+    } catch (error) {
+        console.error('Erro ao buscar paroquianos:', error);
+    }
+}
+
+async function buscarCelebracoes() {
+    try {
+        const response = await fetch(`${API_URL}/celebracoes`);
+        if (response.ok) {
+            celebracoes = await response.json();
+            carregarCelebracoes();
         }
-        
-        const aniversariantesResponse = await fetch(`${API_URL}/aniversariantes`);
-        if (aniversariantesResponse.ok) {
-            aniversariantes = await aniversariantesResponse.json();
+    } catch (error) {
+        console.error('Erro ao buscar celebrações:', error);
+    }
+}
+
+async function buscarAniversariantes() {
+    try {
+        const mesAtual = new Date().getMonth() + 1;
+        const response = await fetch(`${API_URL}/aniversariantes/${mesAtual}`);
+        if (response.ok) {
+            aniversariantes = await response.json();
             carregarAniversariantes();
         }
     } catch (error) {
-        console.error('Erro ao conectar ao backend:', error);
+        console.error('Erro ao buscar aniversariantes:', error);
     }
 }
+
+async function buscarCelebrantes() {
+    try {
+        const response = await fetch(`${API_URL}/celebrantes`);
+        if (response.ok) {
+            celebrantes = await response.json();
+        }
+    } catch (error) {
+        console.error('Erro ao buscar celebrantes:', error);
+    }
+}
+
+async function buscarSacramentos() {
+    try {
+        const response = await fetch(`${API_URL}/sacramentos`);
+        if (response.ok) {
+            sacramentos = await response.json();
+        }
+    } catch (error) {
+        console.error('Erro ao buscar sacramentos:', error);
+    }
+}
+
+// ========== ATUALIZAÇÃO AUTOMÁTICA ==========
+setInterval(() => {
+    buscarDadosBackend();
+}, 300000);
