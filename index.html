@@ -106,134 +106,207 @@
 
             <!-- Content Area -->
             <div class="content-area">
-                <!-- Stats Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card stat-card-black">
-                        <div class="stat-content">
-                            <div>
-                                <p class="stat-label">Paroquianos</p>
-                                <h3 class="stat-value" id="stat-paroquianos">0</h3>
+                <!-- VISTA DASHBOARD (CONTEÚDO ORIGINAL) -->
+                <div id="dashboard-view">
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card stat-card-black">
+                            <div class="stat-content">
+                                <div>
+                                    <p class="stat-label">Paroquianos</p>
+                                    <h3 class="stat-value" id="stat-paroquianos">0</h3>
+                                </div>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                </svg>
                             </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                            </svg>
+                        </div>
+
+                        <div class="stat-card stat-card-white">
+                            <div class="stat-content">
+                                <div>
+                                    <p class="stat-label">Celebrações</p>
+                                    <h3 class="stat-value" id="stat-celebracoes">0</h3>
+                                </div>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="stat-card stat-card-black">
+                            <div class="stat-content">
+                                <div>
+                                    <p class="stat-label">Sacramentos</p>
+                                    <h3 class="stat-value" id="stat-sacramentos">0</h3>
+                                </div>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
+                                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="stat-card stat-card-white">
+                            <div class="stat-content">
+                                <div>
+                                    <p class="stat-label">Celebrantes</p>
+                                    <h3 class="stat-value" id="stat-celebrantes">0</h3>
+                                </div>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                </svg>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="stat-card stat-card-white">
-                        <div class="stat-content">
-                            <div>
-                                <p class="stat-label">Celebrações</p>
-                                <h3 class="stat-value" id="stat-celebracoes">0</h3>
+                    <!-- Tables Grid -->
+                    <div class="tables-grid">
+                        <!-- Paroquianos Recentes -->
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h3>PAROQUIANOS RECENTES</h3>
+                                <button class="btn-primary" onclick="abrirModal('paroquiano')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    Adicionar
+                                </button>
                             </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                <line x1="16" y1="2" x2="16" y2="6"/>
-                                <line x1="8" y1="2" x2="8" y2="6"/>
-                                <line x1="3" y1="10" x2="21" y2="10"/>
-                            </svg>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Contacto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-paroquianos">
+                                        <!-- Preenchido via JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="stat-card stat-card-black">
-                        <div class="stat-content">
-                            <div>
-                                <p class="stat-label">Sacramentos</p>
-                                <h3 class="stat-value" id="stat-sacramentos">0</h3>
+                        <!-- Aniversariantes do Mês -->
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h3>ANIVERSARIANTES DO MÊS</h3>
                             </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
-                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-                            </svg>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Dia</th>
+                                            <th>Nome</th>
+                                            <th>Idade</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-aniversariantes">
+                                        <!-- Preenchido via JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="stat-card stat-card-white">
-                        <div class="stat-content">
-                            <div>
-                                <p class="stat-label">Celebrantes</p>
-                                <h3 class="stat-value" id="stat-celebrantes">0</h3>
+                        <!-- Próximas Celebrações -->
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h3>PRÓXIMAS CELEBRAÇÕES</h3>
+                                <button class="btn-primary" onclick="abrirModal('celebracao')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    Adicionar
+                                </button>
                             </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                            </svg>
+                            <div class="eventos-container" id="celebracoes-container">
+                                <!-- Preenchido via JavaScript -->
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tables Grid -->
-                <div class="tables-grid">
-                    <!-- Paroquianos Recentes -->
-                    <div class="table-card">
-                        <div class="table-header">
-                            <h3>PAROQUIANOS RECENTES</h3>
-                            <button class="btn-primary" onclick="abrirModal('paroquiano')">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
-                                Adicionar
-                            </button>
-                        </div>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Nome</th>
-                                        <th>Contacto</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-paroquianos">
-                                    <!-- Preenchido via JavaScript -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <!-- VISTA GESTÃO DE CELEBRAÇÕES (SPA) -->
+                <div id="celebracoes-view" style="display: none;">
+                    <div class="tables-grid">
+                        <!-- Formulário Nova Celebração -->
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h3>NOVA CELEBRAÇÃO</h3>
+                            </div>
+                            <div class="table-container">
+                                <form id="form-nova-celebracao" onsubmit="criarCelebracao(event)">
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="nova-celebracao-data">Data *</label>
+                                            <input type="date" id="nova-celebracao-data" required>
+                                        </div>
 
-                    <!-- Aniversariantes do Mês -->
-                    <div class="table-card">
-                        <div class="table-header">
-                            <h3>ANIVERSARIANTES DO MÊS</h3>
-                        </div>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Dia</th>
-                                        <th>Nome</th>
-                                        <th>Idade</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-aniversariantes">
-                                    <!-- Preenchido via JavaScript -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                        <div class="form-group">
+                                            <label for="nova-celebracao-hora">Hora *</label>
+                                            <input type="time" id="nova-celebracao-hora" required>
+                                        </div>
 
-                    <!-- Próximas Celebrações -->
-                    <div class="table-card">
-                        <div class="table-header">
-                            <h3>PRÓXIMAS CELEBRAÇÕES</h3>
-                            <button class="btn-primary" onclick="abrirModal('celebracao')">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
-                                Adicionar
-                            </button>
+                                        <div class="form-group">
+                                            <label for="nova-celebracao-tipo">Tipo *</label>
+                                            <select id="nova-celebracao-tipo" required>
+                                                <option value="">Selecione...</option>
+                                                <option value="Missa">Missa</option>
+                                                <option value="Batismo">Batismo</option>
+                                                <option value="Casamento">Casamento</option>
+                                                <option value="Exéquias">Exéquias</option>
+                                                <option value="Outra">Outra</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="nova-celebracao-celebrante">Celebrante *</label>
+                                            <select id="nova-celebracao-celebrante" required>
+                                                <!-- Preenchido via JS -->
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="nova-celebracao-local">Local</label>
+                                            <input type="text" id="nova-celebracao-local" placeholder="Igreja Matriz, Capela X, ...">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn-primary">
+                                            Guardar Celebração
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <!-- Mensagens de erro / sucesso -->
+                                <div id="celebracoes-mensagens" class="mensagens-celebracoes"></div>
+                            </div>
                         </div>
-                        <div class="eventos-container" id="celebracoes-container">
-                            <!-- Preenchido via JavaScript -->
+
+                        <!-- Lista de Próximas Celebrações (Vista de Gestão) -->
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h3>PRÓXIMAS CELEBRAÇÕES</h3>
+                            </div>
+                            <div class="eventos-container" id="celebracoes-container-gerir">
+                                <!-- Preenchido via JavaScript -->
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> <!-- fim .content-area -->
         </div>
     </div>
 

@@ -9,7 +9,7 @@ const {
 // GET /api/celebracoes  -> lista todas
 router.get('/', listarCelebracoes);
 
-// POST /api/celebracoes -> cria nova celebração (REQ-01.1)
+// POST /api/celebracoes -> cria nova celebração
 router.post('/', criarNovaCelebracao);
 
 module.exports = router;
