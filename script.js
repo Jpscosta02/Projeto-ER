@@ -96,7 +96,7 @@ function carregarParoquianos() {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${p.nome}</td>
-            <td>${p.telemovel || "—"}</td>
+            <td>${p.contacto || "—"}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -283,7 +283,7 @@ async function criarCelebracao(event) {
     const celebranteId = document.getElementById("nova-celebracao-celebrante").value;
     const local = document.getElementById("nova-celebracao-local").value;
 
-    if (!data || !hora || !tipo || !celebranteId) {
+    if (!data || !hora || !tipo || !local) {
         mostrarMensagemCelebracoes("Preencha todos os campos obrigatórios.", "erro");
         return;
     }

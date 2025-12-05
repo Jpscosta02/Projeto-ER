@@ -421,6 +421,46 @@ td.text-gray {
     border: 1px solid #d1d5db;
 }
 
+.form-new-celebration{
+    padding: 16px;
+}
+
+.form-grid{
+    display: grid;
+    grid-template-columns: 100px 1fr;  /* 150px = largura fixa do label */
+    gap: 20px 30px; /* espaço entre linhas e colunas */
+    width: 100%;
+    flex-direction: column;
+    border-radius: 8px;
+    border:2px solid #e5e7eb;
+    padding:12px;
+}
+
+#form-nova-celebracao{
+    display:flex;
+    flex-direction: column;
+    gap: 13px;
+    align-items: center;
+    padding: 12px;
+}
+
+.form-group {
+    display: contents; /* permite que label e input entrem diretamente no grid */
+}
+
+.form-group label {
+    display: flex;
+    justify-content: flex-start; /* direita → fica alinhado */
+    padding-right: 10px;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 8px;
+}
+
 /* Responsivo */
 @media (max-width: 1024px) {
     .tables-grid {
