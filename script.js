@@ -21,6 +21,8 @@ let currentView = "dashboard";
 let celebracaoEditarId = null;
 let celebracaoEditarOriginalData = null;
 let celebracaoEditarOriginalHora = null;
+const CELEBRACOES_POR_PAGINA = 3;
+const paginaCelebracoes = {};
 let filtroCelebranteId = "";
 let filtroCelebracaoTipo = "";
 
@@ -298,6 +300,20 @@ function filtrarCelebracoes(lista) {
     });
 }
 
+function obterPaginaAtual(containerId, totalPaginas) {
+    if (!(containerId in paginaCelebracoes)) {
+        paginaCelebracoes[containerId] = 0;
+    }
+    const pagina = Math.max(0, Math.min(paginaCelebracoes[containerId], Math.max(totalPaginas - 1, 0)));
+    paginaCelebracoes[containerId] = pagina;
+    return pagina;
+}
+
+function mudarPaginaCelebracoes(containerId, novaPagina) {
+    paginaCelebracoes[containerId] = Math.max(0, novaPagina);
+    carregarCelebracoes();
+}
+
 async function buscarCelebracoes() {
     try {
         const response = await fetch(`${API_URL}/celebracoes`);
@@ -338,7 +354,12 @@ function carregarCelebracoes() {
             return;
         }
 
-        lista.forEach(ev => {
+        const totalPaginas = Math.ceil(lista.length / CELEBRACOES_POR_PAGINA);
+        const paginaAtual = obterPaginaAtual(container.id, totalPaginas);
+        const inicio = paginaAtual * CELEBRACOES_POR_PAGINA;
+        const listaPagina = lista.slice(inicio, inicio + CELEBRACOES_POR_PAGINA);
+
+        listaPagina.forEach(ev => {
             const dataObj = ev.data ? new Date(ev.data) : null;
             let dia = "";
             let mes = "";
@@ -374,6 +395,41 @@ function carregarCelebracoes() {
 
             container.appendChild(div);
         });
+
+        // Controles de paginação
+        container.querySelectorAll(".eventos-nav-btn").forEach(btn => btn.remove());
+
+        if (totalPaginas > 1) {
+            if (paginaAtual > 0) {
+                const btnPrev = document.createElement("button");
+                btnPrev.className = "eventos-nav-btn nav-prev";
+                btnPrev.textContent = "<";
+                btnPrev.onclick = (e) => {
+                    e.stopPropagation();
+                    mudarPaginaCelebracoes(container.id, paginaAtual - 1);
+                };
+                container.appendChild(btnPrev);
+            }
+
+            if (paginaAtual < totalPaginas - 1) {
+                const btnNext = document.createElement("button");
+                btnNext.className = "eventos-nav-btn nav-next";
+                btnNext.textContent = ">";
+                btnNext.onclick = (e) => {
+                    e.stopPropagation();
+                    mudarPaginaCelebracoes(container.id, paginaAtual + 1);
+                };
+                container.appendChild(btnNext);
+            }
+        }
+
+        // Guardar a maior altura já vista para manter os botões centrados mesmo com menos itens
+        const baseHeightAttr = container.getAttribute("data-base-height");
+        const baseHeight = baseHeightAttr ? Number(baseHeightAttr) : 0;
+        const currentHeight = container.scrollHeight;
+        const alturaFinal = Math.max(baseHeight || 240, currentHeight);
+        container.setAttribute("data-base-height", String(alturaFinal));
+        container.style.minHeight = `${alturaFinal}px`;
     });
 }
 

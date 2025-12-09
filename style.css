@@ -373,6 +373,8 @@ td.text-gray {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    position: relative;
+    min-height: 240px; /* evita encolher demais para que os botões fiquem centrados */
 }
 
 .evento-card {
@@ -456,7 +458,7 @@ td.text-gray {
 #form-nova-celebracao{
     display:flex;
     flex-direction: column;
-    gap: 13px;
+    gap: 30px;
     align-items: center;
     padding: 12px;
 }
@@ -549,6 +551,38 @@ td.text-gray {
     display: flex;
     justify-content: space-between;
     gap: 10px;
+}
+
+.eventos-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #111827;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.eventos-nav-btn:hover {
+    background: #111827;
+    color: white;
+    border-color: #111827;
+}
+
+.eventos-nav-btn.nav-prev {
+    left: 8px;
+}
+
+.eventos-nav-btn.nav-next {
+    right: 8px;
 }
 
 .filter-toggle {
