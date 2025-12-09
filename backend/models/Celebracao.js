@@ -13,7 +13,12 @@ async function getTodasCelebracoes() {
   return result.rows;
 }
 
-// VERIFICAR SE JÁ EXISTE CELEBRAÇÃO NESSA DATA/HORA
+async function getCelebracaoPorId(id) { 
+  const result = await pool.query('SELECT * FROM celebracoes WHERE id = $1', [id]);
+  return result.rows[0];
+}
+
+// VERIFICAR SE JÁ EXISTE CELEBRAÇÃO NESSA DATA/HORA (bool)
 async function existeConflitoDataHora(data, hora) {
   const result = await pool.query(
     `SELECT 1
@@ -25,9 +30,23 @@ async function existeConflitoDataHora(data, hora) {
   return result.rowCount > 0;
 }
 
+//OBTER CELEBRAÇÃO NESSA DATA/HORA (para REQ-01.5)
+async function getCelebracaoPorDataHora(data, hora) {
+  const result = await pool.query(
+    `SELECT c.*,
+            ce.nome AS celebrante_nome
+       FROM celebracoes c
+  LEFT JOIN celebrantes ce ON c.celebrante_id = ce.id
+      WHERE c.data = $1
+        AND c.hora = $2
+      LIMIT 1`,
+    [data, hora]
+  );
+  return result.rows[0] || null;
+}
+
 // CRIAR NOVA CELEBRAÇÃO
 async function criarCelebracao({ data, hora, tipo, local, celebranteId }) {
-  // validação mínima aqui (opcional, já fazes no controller)
   if (!data || !hora || !tipo || !celebranteId) {
     const err = new Error('Data, hora, tipo e celebrante são obrigatórios.');
     err.code = 'CAMPOS_OBRIGATORIOS';
@@ -53,7 +72,25 @@ async function criarCelebracao({ data, hora, tipo, local, celebranteId }) {
   return result.rows[0];
 }
 
+async function updateCelebracao(id, { data, hora, tipo, local, celebranteId }) {
+  const result = await pool.query(
+    `UPDATE celebracoes
+        SET data = $1,
+            hora = $2,
+            tipo = $3,
+            local = $4,
+            celebrante_id = $5
+      WHERE id = $6
+  RETURNING *`,
+    [data, hora, tipo, local || null, celebranteId, id]
+  );
+  return result.rows[0] || null;
+}
+
 module.exports = {
   getTodasCelebracoes,
-  criarCelebracao
+  criarCelebracao,
+  getCelebracaoPorDataHora,  
+  getCelebracaoPorId,
+  updateCelebracao
 };

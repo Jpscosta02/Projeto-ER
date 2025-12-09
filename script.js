@@ -18,10 +18,15 @@ let stats = {
 };
 
 let currentView = "dashboard";
+let celebracaoEditarId = null;
+let celebracaoEditarOriginalData = null;
+let celebracaoEditarOriginalHora = null;
+let filtroCelebranteId = "";
+let filtroCelebracaoTipo = "";
 
 
 // =============================
-//  ALTERAR VISTA (SPA)
+//  VISTAS (DASHBOARD / CELEBRAÇÕES)
 // =============================
 function mostrarVista(vista) {
     const dashboardView = document.getElementById("dashboard-view");
@@ -42,17 +47,35 @@ function mostrarVista(vista) {
 
 
 // =============================
-//  MENU ATIVO
+//  MENU LATERAL
 // =============================
 function setActiveMenu(element) {
     const items = document.querySelectorAll(".menu-item");
     items.forEach(i => i.classList.remove("active"));
     element.classList.add("active");
 
-    const label = element.querySelector("span").textContent.trim().toUpperCase();
+    const labelSpan = element.querySelector("span");
+    const label = labelSpan ? labelSpan.textContent.trim().toUpperCase() : "";
 
-    if (label === "CELEBRAÇÕES") mostrarVista("celebracoes");
-    else mostrarVista("dashboard");
+    if (label === "CELEBRAÇÕES") {
+        mostrarVista("celebracoes");
+    } else {
+        mostrarVista("dashboard");
+    }
+}
+
+
+// =============================
+//  BOTÕES "ADICIONAR" DO DASHBOARD
+// =============================
+function abrirModal(tipo) {
+    if (tipo === "celebracao") {
+        mostrarVista("celebracoes");
+        const dataInput = document.getElementById("nova-celebracao-data");
+        if (dataInput) dataInput.focus();
+    } else if (tipo === "paroquiano") {
+        console.log("Abrir modal de novo paroquiano (se quiseres implementar).");
+    }
 }
 
 
@@ -93,13 +116,70 @@ function carregarParoquianos() {
     tbody.innerHTML = "";
 
     paroquianos.slice(0, 4).forEach(p => {
+        const dataStr = p.data_nascimento
+            ? new Date(p.data_nascimento).toLocaleDateString("pt-PT")
+            : "";
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${p.nome}</td>
+            <td>${dataStr}</td>
             <td>${p.contacto || "—"}</td>
         `;
         tbody.appendChild(tr);
     });
+
+    const tbodyFull = document.getElementById("table-paroquianos-full");
+    if (tbodyFull) {
+        tbodyFull.innerHTML = "";
+        paroquianos.forEach(p => {
+            const dataStr = p.data_nascimento
+                ? new Date(p.data_nascimento).toLocaleDateString("pt-PT")
+                : "";
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${p.nome}</td>
+                <td>${dataStr}</td>
+                <td>${p.contacto || "—"}</td>
+            `;
+            tbodyFull.appendChild(tr);
+        });
+    }
+}
+
+async function criarParoquiano(event) {
+    event.preventDefault();
+
+    const nome = (document.getElementById("novo-paroquiano-nome") || {}).value?.trim();
+    const data_nascimento = (document.getElementById("novo-paroquiano-data") || {}).value;
+    const contacto = (document.getElementById("novo-paroquiano-contacto") || {}).value?.trim();
+    const morada = (document.getElementById("novo-paroquiano-morada") || {}).value?.trim();
+
+    if (!nome || !data_nascimento) {
+        alert("Nome e data de nascimento são obrigatórios.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/paroquianos`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nome, data_nascimento, contacto, morada })
+        });
+
+        if (!response.ok) {
+            alert("Erro ao criar paroquiano.");
+            return;
+        }
+
+        const form = document.getElementById("form-novo-paroquiano");
+        if (form) form.reset();
+
+        await buscarParoquianos();
+        await buscarStats();
+
+    } catch (err) {
+        console.error("Erro ao criar paroquiano:", err);
+    }
 }
 
 
@@ -125,11 +205,14 @@ function carregarAniversariantes() {
     tbody.innerHTML = "";
 
     aniversariantes.forEach(a => {
+        const dataStr = a.data_nascimento
+            ? new Date(a.data_nascimento).toLocaleDateString("pt-PT")
+            : "";
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${a.dia}</td>
+            <td>${dataStr}</td>
             <td>${a.nome}</td>
-            <td>${a.idade}</td>
+            <td>${a.idade || "—"}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -139,6 +222,82 @@ function carregarAniversariantes() {
 // =============================
 //  CELEBRAÇÕES
 // =============================
+function toggleFiltroCelebracoes(event) {
+    const menu = document.getElementById("filtro-celebracoes-menu");
+    if (!menu) return;
+
+    event.stopPropagation();
+    const isHidden = menu.classList.contains("hidden");
+
+    if (isHidden) {
+        menu.classList.remove("hidden");
+        document.addEventListener("click", fecharFiltroCelebracoesAoClicarFora);
+    } else {
+        fecharFiltroCelebracoes();
+    }
+}
+
+function fecharFiltroCelebracoes() {
+    const menu = document.getElementById("filtro-celebracoes-menu");
+    if (menu) {
+        menu.classList.add("hidden");
+    }
+    document.removeEventListener("click", fecharFiltroCelebracoesAoClicarFora);
+}
+
+function fecharFiltroCelebracoesAoClicarFora(event) {
+    const menu = document.getElementById("filtro-celebracoes-menu");
+    const toggle = document.querySelector(".filter-toggle");
+    if (!menu) return;
+
+    if (!menu.contains(event.target) && (!toggle || !toggle.contains(event.target))) {
+        fecharFiltroCelebracoes();
+    }
+}
+
+function aplicarFiltroCelebracoes() {
+    const selectCelebrante = document.getElementById("filtro-celebrante");
+    const inputTipo = document.getElementById("filtro-tipo");
+
+    filtroCelebranteId = selectCelebrante ? selectCelebrante.value : "";
+    filtroCelebracaoTipo = inputTipo ? inputTipo.value.trim().toLowerCase() : "";
+
+    carregarCelebracoes();
+    fecharFiltroCelebracoes();
+}
+
+function limparFiltroCelebracoes() {
+    const selectCelebrante = document.getElementById("filtro-celebrante");
+    const inputTipo = document.getElementById("filtro-tipo");
+
+    filtroCelebranteId = "";
+    filtroCelebracaoTipo = "";
+
+    if (selectCelebrante) selectCelebrante.value = "";
+    if (inputTipo) inputTipo.value = "";
+
+    carregarCelebracoes();
+}
+
+function filtrarCelebracoes(lista) {
+    return lista.filter(ev => {
+        const celebranteId = ev.celebrante_id ?? ev.celebranteId;
+
+        if (filtroCelebranteId && String(celebranteId) !== String(filtroCelebranteId)) {
+            return false;
+        }
+
+        if (filtroCelebracaoTipo) {
+            const tipo = (ev.tipo || "").toLowerCase();
+            if (!tipo.includes(filtroCelebracaoTipo)) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+}
+
 async function buscarCelebracoes() {
     try {
         const response = await fetch(`${API_URL}/celebracoes`);
@@ -160,16 +319,39 @@ function carregarCelebracoes() {
     containers.forEach(container => {
         container.innerHTML = "";
 
-        if (celebracoes.length === 0) {
+        const lista =
+            container.id === "celebracoes-container-gerir"
+                ? filtrarCelebracoes(celebracoes || [])
+                : (celebracoes || []);
+
+        if (!lista || lista.length === 0) {
+            const temFiltros =
+                container.id === "celebracoes-container-gerir" &&
+                (filtroCelebranteId || filtroCelebracaoTipo);
+
+            const mensagem = temFiltros
+                ? "Nenhuma celebração encontrada para os filtros selecionados."
+                : "Sem celebrações agendadas";
+
             container.innerHTML =
-                '<p style="padding: 16px; text-align:center; color:#777;">Sem celebrações agendadas</p>';
+                `<p style="padding: 16px; text-align:center; color:#777;">${mensagem}</p>`;
             return;
         }
 
-        celebracoes.forEach(ev => {
-            const dataObj = new Date(ev.data);
-            const dia = dataObj.getDate();
-            const mes = dataObj.toLocaleString("pt-PT", { month: "short" }).toUpperCase();
+        lista.forEach(ev => {
+            const dataObj = ev.data ? new Date(ev.data) : null;
+            let dia = "";
+            let mes = "";
+
+            if (dataObj && !isNaN(dataObj)) {
+                dia = String(dataObj.getDate()).padStart(2, "0");
+                mes = dataObj.toLocaleString("pt-PT", { month: "short" }).toUpperCase();
+            } else if (ev.data && /^\d{4}-\d{2}-\d{2}$/.test(ev.data)) {
+                const [y, m, d] = ev.data.split("-");
+                dia = d;
+                const dateTmp = new Date(Number(y), Number(m) - 1, Number(d));
+                mes = dateTmp.toLocaleString("pt-PT", { month: "short" }).toUpperCase();
+            }
 
             const div = document.createElement("div");
             div.className = "evento-card";
@@ -179,8 +361,12 @@ function carregarCelebracoes() {
                     <div class="mes">${mes}</div>
                     <div class="dia">${dia}</div>
                 </div>
+
                 <div class="evento-info">
-                    <h4>${ev.tipo}</h4>
+                    <h4>
+                        ${ev.tipo}
+                        <button type="button" class="btn-editar" onclick="abrirEditarCelebracao(${ev.id})">✏️</button>
+                    </h4>
                     <p>${ev.hora} - ${ev.local || ""}</p>
                     <span class="evento-tag">${ev.celebrante_nome || "Celebrante"}</span>
                 </div>
@@ -191,7 +377,6 @@ function carregarCelebracoes() {
     });
 }
 
-
 // =============================
 //  SACRAMENTOS
 // =============================
@@ -200,10 +385,30 @@ async function buscarSacramentos() {
         const response = await fetch(`${API_URL}/sacramentos`);
         if (response.ok) {
             sacramentos = await response.json();
+            carregarSacramentos();
         }
     } catch (err) {
         console.error("Erro ao buscar sacramentos:", err);
     }
+}
+
+function carregarSacramentos() {
+    const tbody = document.getElementById("table-sacramentos");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    sacramentos.forEach(s => {
+        const dataStr = s.data ? new Date(s.data).toLocaleDateString("pt-PT") : "";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${s.nome_paroquiano}</td>
+            <td>${s.tipo}</td>
+            <td>${dataStr}</td>
+            <td>${s.local || ""}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 
@@ -215,15 +420,16 @@ async function buscarCelebrantes() {
         const response = await fetch(`${API_URL}/celebrantes`);
         if (response.ok) {
             celebrantes = await response.json();
-            preencherSelectCelebrantes();
+            preencherSelectCelebrantes("nova-celebracao-celebrante");
+            preencherSelectCelebrantes("filtro-celebrante", filtroCelebranteId);
         }
     } catch (err) {
         console.error("Erro ao buscar celebrantes:", err);
     }
 }
 
-function preencherSelectCelebrantes() {
-    const select = document.getElementById("nova-celebracao-celebrante");
+function preencherSelectCelebrantes(selectId, selectedId = null) {
+    const select = document.getElementById(selectId);
     if (!select) return;
 
     select.innerHTML = '<option value="">Selecione...</option>';
@@ -232,6 +438,9 @@ function preencherSelectCelebrantes() {
         const opt = document.createElement("option");
         opt.value = c.id;
         opt.textContent = c.nome;
+        if (selectedId && Number(selectedId) === Number(c.id)) {
+            opt.selected = true;
+        }
         select.appendChild(opt);
     });
 }
@@ -253,15 +462,87 @@ async function buscarStats() {
 }
 
 function carregarStats() {
-    document.getElementById("stat-paroquianos").textContent = stats.paroquianos;
-    document.getElementById("stat-celebracoes").textContent = stats.celebracoes;
-    document.getElementById("stat-sacramentos").textContent = stats.sacramentos;
-    document.getElementById("stat-celebrantes").textContent = stats.celebrantes;
+    const sp = document.getElementById("stat-paroquianos");
+    const sc = document.getElementById("stat-celebracoes");
+    const ss = document.getElementById("stat-sacramentos");
+    const sceb = document.getElementById("stat-celebrantes");
+
+    if (sp) sp.textContent = stats.paroquianos ?? 0;
+    if (sc) sc.textContent = stats.celebracoes ?? 0;
+    if (ss) ss.textContent = stats.sacramentos ?? 0;
+    if (sceb) sceb.textContent = stats.celebrantes ?? 0;
 }
 
 
 // =============================
-//  CRIAR CELEBRAÇÃO (REQ-01.1)
+//  DISPONIBILIDADE (CRIAR)
+// =============================
+function mostrarDisponibilidade(msg, estado) {
+    const box = document.getElementById("disponibilidade-msg");
+    if (!box) return;
+
+    box.textContent = msg || "";
+    box.className = "mensagens-disponibilidade";
+
+    if (!msg) return;
+
+    if (estado === "livre") {
+        box.classList.add("livre");
+    } else if (estado === "ocupado") {
+        box.classList.add("ocupado");
+    }
+}
+
+async function verificarDisponibilidadeDataHora() {
+    const dataEl = document.getElementById("nova-celebracao-data");
+    const horaEl = document.getElementById("nova-celebracao-hora");
+
+    if (!dataEl || !horaEl) return;
+
+    const data = dataEl.value;
+    const hora = horaEl.value;
+
+    if (!data || !hora) {
+        mostrarDisponibilidade("", null);
+        return;
+    }
+
+    try {
+        const resp = await fetch(
+            `${API_URL}/celebracoes/disponibilidade?data=${encodeURIComponent(data)}&hora=${encodeURIComponent(hora)}`
+        );
+
+        if (!resp.ok) {
+            mostrarDisponibilidade("Não foi possível verificar a disponibilidade.", "ocupado");
+            return;
+        }
+
+        const body = await resp.json();
+
+        if (body.disponivel) {
+            mostrarDisponibilidade("Data e hora livres.", "livre");
+        } else if (body.celebracao) {
+            const c = body.celebracao;
+            const info =
+                `${c.tipo || "Celebração"} às ${c.hora} em ${c.local || "local não definido"}` +
+                (c.celebrante_nome ? ` (Celebrante: ${c.celebrante_nome})` : "");
+
+            mostrarDisponibilidade(
+                "Data e hora ocupadas. Já existe: " + info,
+                "ocupado"
+            );
+        } else {
+            mostrarDisponibilidade("Data e hora ocupadas.", "ocupado");
+        }
+    } catch (err) {
+        console.error("Erro ao verificar disponibilidade:", err);
+        mostrarDisponibilidade("Erro de comunicação ao verificar disponibilidade.", "ocupado");
+    }
+}
+
+
+// =============================
+//  CRIAR CELEBRAÇÃO
 // =============================
 function mostrarMensagemCelebracoes(msg, tipo = "erro") {
     const box = document.getElementById("celebracoes-mensagens");
@@ -277,13 +558,13 @@ function mostrarMensagemCelebracoes(msg, tipo = "erro") {
 async function criarCelebracao(event) {
     event.preventDefault();
 
-    const data = document.getElementById("nova-celebracao-data").value;
-    const hora = document.getElementById("nova-celebracao-hora").value;
-    const tipo = document.getElementById("nova-celebracao-tipo").value;
-    const celebranteId = document.getElementById("nova-celebracao-celebrante").value;
-    const local = document.getElementById("nova-celebracao-local").value;
+    const data = (document.getElementById("nova-celebracao-data") || {}).value;
+    const hora = (document.getElementById("nova-celebracao-hora") || {}).value;
+    const tipo = (document.getElementById("nova-celebracao-tipo") || {}).value;
+    const celebranteId = (document.getElementById("nova-celebracao-celebrante") || {}).value;
+    const local = (document.getElementById("nova-celebracao-local") || {}).value;
 
-    if (!data || !hora || !tipo || !local) {
+    if (!data || !hora || !tipo || !celebranteId) {
         mostrarMensagemCelebracoes("Preencha todos os campos obrigatórios.", "erro");
         return;
     }
@@ -299,21 +580,184 @@ async function criarCelebracao(event) {
         try { body = await response.json(); } catch {}
 
         if (!response.ok) {
-            const msg = body?.mensagem || "Erro ao guardar celebração.";
+            const msg = (body && body.mensagem) || "Erro ao guardar celebração.";
             mostrarMensagemCelebracoes(msg, "erro");
             return;
         }
 
         mostrarMensagemCelebracoes("Celebração registada com sucesso!", "sucesso");
 
-        document.getElementById("form-nova-celebracao").reset();
+        const form = document.getElementById("form-nova-celebracao");
+        if (form) form.reset();
+        mostrarDisponibilidade("", null);
 
         await buscarCelebracoes();
         await buscarStats();
-
     } catch (err) {
         console.error("Erro ao criar celebração:", err);
         mostrarMensagemCelebracoes("Erro de comunicação com o servidor.", "erro");
+    }
+}
+
+
+// =============================
+//  EDITAR CELEBRAÇÃO
+// =============================
+function abrirEditarCelebracao(id) {
+    const modal = document.getElementById("modal-editar");
+    if (!modal) {
+        console.warn("Modal de edição não existe no HTML.");
+        return;
+    }
+
+    const celebracao = celebracoes.find(c => Number(c.id) === Number(id));
+    if (!celebracao) {
+        console.warn("Celebração não encontrada para edição:", id);
+        return;
+    }
+
+    celebracaoEditarId = Number(id);
+
+    const inputData = document.getElementById("edit-data");
+    const inputHora = document.getElementById("edit-hora");
+    const inputTipo = document.getElementById("edit-tipo");
+    const inputLocal = document.getElementById("edit-local");
+
+    if (inputData) {
+        inputData.value = celebracao.data ? celebracao.data.substring(0, 10) : "";
+    }
+    if (inputHora) {
+        inputHora.value = celebracao.hora || "";
+    }
+    if (inputTipo) inputTipo.value = celebracao.tipo || "";
+    if (inputLocal) inputLocal.value = celebracao.local || "";
+
+    celebracaoEditarOriginalData = inputData ? inputData.value : null;
+    celebracaoEditarOriginalHora = inputHora ? inputHora.value : null;
+
+    preencherSelectCelebrantes("edit-celebrante", celebracao.celebrante_id);
+
+    const msgBox = document.getElementById("editar-disponibilidade-msg");
+    if (msgBox) {
+        msgBox.textContent = "";
+        msgBox.className = "";
+    }
+
+    modal.classList.remove("hidden");
+}
+
+function fecharModalEditar() {
+    const modal = document.getElementById("modal-editar");
+    if (!modal) return;
+    modal.classList.add("hidden");
+    celebracaoEditarId = null;
+    celebracaoEditarOriginalData = null;
+    celebracaoEditarOriginalHora = null;
+}
+
+async function verificarDisponibilidadeEditar() {
+    const dataEl = document.getElementById("edit-data");
+    const horaEl = document.getElementById("edit-hora");
+    const msgBox = document.getElementById("editar-disponibilidade-msg");
+
+    if (!dataEl || !horaEl || !msgBox) return true;
+
+    const data = dataEl.value;
+    const hora = horaEl.value;
+
+    if (!data || !hora) {
+        msgBox.textContent = "";
+        msgBox.className = "";
+        return true;
+    }
+
+    // Se não mudaste data/hora, não precisamos de validar – deixa passar
+    if (data === celebracaoEditarOriginalData && hora === celebracaoEditarOriginalHora) {
+        msgBox.textContent = "";
+        msgBox.className = "";
+        return true;
+    }
+
+    try {
+        const resp = await fetch(
+            `${API_URL}/celebracoes/disponibilidade?data=${encodeURIComponent(data)}&hora=${encodeURIComponent(hora)}`
+        );
+
+        if (!resp.ok) {
+            msgBox.textContent = "Não foi possível verificar a disponibilidade.";
+            msgBox.style.color = "red";
+            return false;
+        }
+
+        const body = await resp.json();
+
+        if (body.disponivel || (body.celebracao && Number(body.celebracao.id) === celebracaoEditarId)) {
+            msgBox.textContent = "Data e hora disponíveis.";
+            msgBox.style.color = "green";
+            return true;
+        }
+
+        msgBox.textContent = "Data/hora já ocupadas por outra celebração.";
+        msgBox.style.color = "red";
+        return false;
+    } catch (err) {
+        console.error("Erro ao verificar disponibilidade (editar):", err);
+        msgBox.textContent = "Erro ao verificar disponibilidade.";
+        msgBox.style.color = "red";
+        return false;
+    }
+}
+
+async function submeterEdicaoCelebracao(event) {
+    event.preventDefault();
+
+    if (celebracaoEditarId == null) {
+        alert("Nenhuma celebração selecionada para edição.");
+        return;
+    }
+
+    const data = (document.getElementById("edit-data") || {}).value;
+    const hora = (document.getElementById("edit-hora") || {}).value;
+    const tipo = (document.getElementById("edit-tipo") || {}).value;
+    const celebranteId = (document.getElementById("edit-celebrante") || {}).value;
+    const local = (document.getElementById("edit-local") || {}).value;
+
+    if (!data || !hora || !tipo || !celebranteId) {
+        alert("Preencha todos os campos obrigatórios.");
+        return;
+    }
+
+    const msgBox = document.getElementById("editar-disponibilidade-msg");
+
+    try {
+        const resp = await fetch(`${API_URL}/celebracoes/${celebracaoEditarId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ data, hora, tipo, celebranteId, local })
+        });
+
+        let body = null;
+        try { body = await resp.json(); } catch {}
+
+        if (!resp.ok) {
+            // Se for conflito (409), mostra mensagem no formulário em vez de alert
+            if (resp.status === 409 && msgBox) {
+                msgBox.textContent = (body && body.mensagem) || "Data/hora já ocupadas por outra celebração.";
+                msgBox.style.color = "red";
+                return;
+            }
+
+            const msg = (body && body.mensagem) || "Erro ao atualizar celebração.";
+            alert(msg);
+            return;
+        }
+
+        fecharModalEditar();
+        await buscarCelebracoes();
+        await buscarStats();
+    } catch (err) {
+        console.error("Erro ao atualizar celebração:", err);
+        alert("Erro de comunicação com o servidor.");
     }
 }
 
@@ -324,4 +768,25 @@ async function criarCelebracao(event) {
 window.addEventListener("DOMContentLoaded", () => {
     mostrarVista("dashboard");
     buscarDadosBackend();
+
+    const dataEl = document.getElementById("nova-celebracao-data");
+    const horaEl = document.getElementById("nova-celebracao-hora");
+    if (dataEl) {
+        dataEl.addEventListener("change", verificarDisponibilidadeDataHora);
+        dataEl.addEventListener("input", verificarDisponibilidadeDataHora);
+    }
+    if (horaEl) {
+        horaEl.addEventListener("change", verificarDisponibilidadeDataHora);
+        horaEl.addEventListener("input", verificarDisponibilidadeDataHora);
+    }
+
+    const formEditar = document.getElementById("form-editar-celebracao");
+    if (formEditar) {
+        formEditar.addEventListener("submit", submeterEdicaoCelebracao);
+    }
+
+    const editDataEl = document.getElementById("edit-data");
+    const editHoraEl = document.getElementById("edit-hora");
+    if (editDataEl) editDataEl.addEventListener("change", verificarDisponibilidadeEditar);
+    if (editHoraEl) editHoraEl.addEventListener("change", verificarDisponibilidadeEditar);
 });

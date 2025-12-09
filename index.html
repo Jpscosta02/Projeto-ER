@@ -260,14 +260,7 @@
 
                                         <div class="form-group">
                                             <label for="nova-celebracao-tipo">Tipo *</label>
-                                            <select id="nova-celebracao-tipo" required>
-                                                <option value="">Selecione...</option>
-                                                <option value="Missa">Missa</option>
-                                                <option value="Batismo">Batismo</option>
-                                                <option value="Casamento">Casamento</option>
-                                                <option value="Exéquias">Exéquias</option>
-                                                <option value="Outra">Outra</option>
-                                            </select>
+                                            <input type="text" id="nova-celebracao-tipo">
                                         </div>
 
                                         <div class="form-group">
@@ -289,7 +282,7 @@
                                         </button>
                                     </div>
                                 </form>
-
+                                <div id="disponibilidade-msg" class="mensagens-disponibilidade"></div>
                                 <!-- Mensagens de erro / sucesso -->
                                 <div id="celebracoes-mensagens" class="mensagens-celebracoes"></div>
                             </div>
@@ -299,9 +292,65 @@
                         <div class="table-card">
                             <div class="table-header">
                                 <h3>PRÓXIMAS CELEBRAÇÕES</h3>
+                                <button type="button" class="filter-toggle" onclick="toggleFiltroCelebracoes(event)">
+                                    Filtrar 
+                                    <img src="Images/filter.svg" alt="Editar">
+                                </button>
+                            </div>
+
+                            <div id="filtro-celebracoes-menu" class="filter-menu hidden">
+                                <div class="filter-row">
+                                    <label for="filtro-celebrante">Celebrante</label>
+                                    <select id="filtro-celebrante">
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="filter-row">
+                                    <label for="filtro-tipo">Celebração</label>
+                                    <input type="text" id="filtro-tipo" placeholder="Missa, batismo, casamento...">
+                                </div>
+                                <div class="filter-actions">
+                                    <button type="button" class="btn-secondary" onclick="limparFiltroCelebracoes()">Limpar</button>
+                                    <button type="button" class="btn-primary" onclick="aplicarFiltroCelebracoes()">Aplicar</button>
+                                </div>
                             </div>
                             <div class="eventos-container" id="celebracoes-container-gerir">
                                 <!-- Preenchido via JavaScript -->
+                            </div>
+                            <div id="modal-editar" class="modal hidden">
+                                <div class="modal-content">
+                                    <h2>Editar Celebração</h2>
+
+                                    <form id="form-editar-celebracao">
+                                        <div class="form-group">
+                                            <label>Data:</label>
+                                            <input type="date" id="edit-data">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Hora:</label>
+                                            <input type="time" id="edit-hora">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Tipo:</label>
+                                            <input type="text" id="edit-tipo">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Celebrante:</label>
+                                            <select id="edit-celebrante"></select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Local:</label>
+                                            <input type="text" id="edit-local">
+                                        </div>
+                                        <div id="editar-disponibilidade-msg"></div>
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn-primary">Guardar alterações</button>
+                                            <button type="button" onclick="fecharModalEditar()" class="btn-primary">Cancelar</button>
+                                        </div>
+
+                                        
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
