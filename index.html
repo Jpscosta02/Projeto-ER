@@ -4,9 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIGE - Sistema Integrado de Gestão Paroquial</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
+    <script>
+        (async function () {
+            try {
+                const stored = localStorage.getItem('sige_user');
+                if (!stored) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                const user = JSON.parse(stored);
+                const resp = await fetch('http://localhost:3001/api/auth/boot');
+                if (!resp.ok) throw new Error('boot request failed');
+                const body = await resp.json();
+                if (!body.bootId || user.bootId !== body.bootId) {
+                    localStorage.removeItem('sige_user');
+                    window.location.href = 'login.html';
+                }
+            } catch (err) {
+                console.error('Falha ao validar sessão:', err);
+                localStorage.removeItem('sige_user');
+                window.location.href = 'login.html';
+            }
+        })();
+    </script>
     <div class="app-container">
         <!-- Sidebar -->
         <div id="sidebar" class="sidebar">
@@ -187,6 +210,7 @@
                                     <thead>
                                         <tr>
                                             <th>Nome</th>
+                                            <th style="white-space: nowrap;">Data Nascimento</th>
                                             <th>Contacto</th>
                                         </tr>
                                     </thead>

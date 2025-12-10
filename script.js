@@ -403,7 +403,13 @@ function carregarCelebracoes() {
             if (paginaAtual > 0) {
                 const btnPrev = document.createElement("button");
                 btnPrev.className = "eventos-nav-btn nav-prev";
-                btnPrev.textContent = "<";
+                btnPrev.innerHTML = `
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M15 19l-7-7 7-7"
+                        stroke="currentColor" stroke-width="2" fill="none"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                `;
                 btnPrev.onclick = (e) => {
                     e.stopPropagation();
                     mudarPaginaCelebracoes(container.id, paginaAtual - 1);
@@ -414,7 +420,13 @@ function carregarCelebracoes() {
             if (paginaAtual < totalPaginas - 1) {
                 const btnNext = document.createElement("button");
                 btnNext.className = "eventos-nav-btn nav-next";
-                btnNext.textContent = ">";
+                btnNext.innerHTML = `
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M9 5l7 7-7 7"
+                            stroke="currentColor" stroke-width="2" fill="none"
+                            stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                `;
                 btnNext.onclick = (e) => {
                     e.stopPropagation();
                     mudarPaginaCelebracoes(container.id, paginaAtual + 1);
@@ -727,7 +739,6 @@ async function verificarDisponibilidadeEditar() {
         return true;
     }
 
-    // Se não mudaste data/hora, não precisamos de validar – deixa passar
     if (data === celebracaoEditarOriginalData && hora === celebracaoEditarOriginalHora) {
         msgBox.textContent = "";
         msgBox.className = "";
@@ -821,7 +832,9 @@ async function submeterEdicaoCelebracao(event) {
 // =============================
 //  ON LOAD
 // =============================
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+    const sessaoValida = await validarSessaoBoot();
+    if (!sessaoValida) return;
     mostrarVista("dashboard");
     buscarDadosBackend();
 
