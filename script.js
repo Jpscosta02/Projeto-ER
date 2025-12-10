@@ -21,10 +21,39 @@ let currentView = "dashboard";
 let celebracaoEditarId = null;
 let celebracaoEditarOriginalData = null;
 let celebracaoEditarOriginalHora = null;
+let celebracaoEditarOriginalCelebranteId = null;
 const CELEBRACOES_POR_PAGINA = 3;
 const paginaCelebracoes = {};
 let filtroCelebranteId = "";
 let filtroCelebracaoTipo = "";
+
+// Valida sessão com base no bootId do servidor (força login após restart)
+async function validarSessaoBoot() {
+    try {
+        const stored = localStorage.getItem("sige_user");
+        if (!stored) {
+            window.location.href = "login.html";
+            return false;
+        }
+
+        const user = JSON.parse(stored);
+        const resp = await fetch(`${API_URL}/auth/boot`);
+        if (!resp.ok) throw new Error("boot check failed");
+        const body = await resp.json();
+
+        if (!body.bootId || user.bootId !== body.bootId) {
+            localStorage.removeItem("sige_user");
+            window.location.href = "login.html";
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.error("Falha ao validar sessão/bootId:", err);
+        localStorage.removeItem("sige_user");
+        window.location.href = "login.html";
+        return false;
+    }
+}
 
 
 // =============================
@@ -702,6 +731,7 @@ function abrirEditarCelebracao(id) {
 
     celebracaoEditarOriginalData = inputData ? inputData.value : null;
     celebracaoEditarOriginalHora = inputHora ? inputHora.value : null;
+    celebracaoEditarOriginalCelebranteId = celebracao.celebrante_id ?? celebracao.celebranteId ?? null;
 
     preencherSelectCelebrantes("edit-celebrante", celebracao.celebrante_id);
 
@@ -788,8 +818,9 @@ async function submeterEdicaoCelebracao(event) {
     const tipo = (document.getElementById("edit-tipo") || {}).value;
     const celebranteId = (document.getElementById("edit-celebrante") || {}).value;
     const local = (document.getElementById("edit-local") || {}).value;
+    const celebranteEscolhido = celebranteId || celebracaoEditarOriginalCelebranteId;
 
-    if (!data || !hora || !tipo || !celebranteId) {
+    if (!data || !hora || !tipo || !celebranteEscolhido) {
         alert("Preencha todos os campos obrigatórios.");
         return;
     }
@@ -800,7 +831,7 @@ async function submeterEdicaoCelebracao(event) {
         const resp = await fetch(`${API_URL}/celebracoes/${celebracaoEditarId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ data, hora, tipo, celebranteId, local })
+            body: JSON.stringify({ data, hora, tipo, celebranteId: celebranteEscolhido, local })
         });
 
         let body = null;
