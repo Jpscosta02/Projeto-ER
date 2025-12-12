@@ -92,6 +92,31 @@ function mostrarVista(vista) {
 
 
 // =============================
+//  UTILIZADOR / UI
+// =============================
+function obterIniciais(nome = "", email = "") {
+    const alvo = nome || email || "";
+    const partes = alvo.trim().split(" ").filter(Boolean);
+    if (partes.length === 0) return "--";
+    const iniciais = partes.slice(0, 2).map(p => p[0]).join("");
+    return iniciais.toUpperCase();
+}
+
+function atualizarUserInfoUI() {
+    const nameEl = document.getElementById("user-name");
+    const avatarEl = document.getElementById("user-avatar");
+    if (!currentUser) return;
+    if (nameEl) nameEl.textContent = currentUser.nome || currentUser.email || "Utilizador";
+    if (avatarEl) avatarEl.textContent = obterIniciais(currentUser.nome, currentUser.email);
+}
+
+function logout() {
+    localStorage.removeItem("sige_user");
+    window.location.href = "login.html";
+}
+
+
+// =============================
 //  MENU LATERAL
 // =============================
 function setActiveMenu(element) {
@@ -1102,6 +1127,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (!sessaoValida) return;
     mostrarVista("dashboard");
     carregarNotificacoes();
+    atualizarUserInfoUI();
     buscarDadosBackend();
 
     const dataEl = document.getElementById("nova-celebracao-data");
@@ -1135,4 +1161,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (notifToggle) notifToggle.addEventListener("click", togglePainelNotificacoes);
     if (notifClear) notifClear.addEventListener("click", limparNotificacoes);
     document.addEventListener("click", fecharNotificacoesAoClicarFora);
+
+    const logoutBtn = document.getElementById("logout-btn");
+    if (logoutBtn) logoutBtn.addEventListener("click", logout);
 });
