@@ -5,6 +5,7 @@ const {
   getCelebracaoPorDataHora,
   criarCelebracao,
   updateCelebracao,
+  deleteCelebracao
 } = require('../models/Celebracao');
 
 // GET /api/celebracoes
@@ -167,9 +168,37 @@ async function atualizarCelebracao(req, res) {
   }
 }
 
+// DELETE /api/celebracoes/:id
+async function removerCelebracao(req, res) {
+  const { id } = req.params;
+
+  if (!id || Number.isNaN(Number(id))) {
+    return res.status(400).json({ mensagem: 'ID inv lido.' });
+  }
+
+  try {
+    const existente = await getCelebracaoPorId(id);
+    if (!existente) {
+      return res.status(404).json({ mensagem: 'Celebra‡Æo nÆo encontrada.' });
+    }
+
+    const apagou = await deleteCelebracao(id);
+    if (!apagou) {
+      return res.status(500).json({ mensagem: 'NÆo foi poss¡vel remover a celebra‡Æo.' });
+    }
+
+    console.log(`[LOG] Celebra‡Æo ID=${id} removida.`);
+    return res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao remover celebra‡Æo:', err);
+    return res.status(500).json({ mensagem: 'Erro ao remover celebra‡Æo.' });
+  }
+}
+
 module.exports = {
   listarCelebracoes,
   criarNovaCelebracao,
   verificarDisponibilidadeCelebracao,
   atualizarCelebracao,
+  removerCelebracao,
 };

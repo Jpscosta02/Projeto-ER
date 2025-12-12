@@ -87,10 +87,16 @@ async function updateCelebracao(id, { data, hora, tipo, local, celebranteId }) {
   return result.rows[0] || null;
 }
 
+async function deleteCelebracao(id) {
+  const result = await pool.query('DELETE FROM celebracoes WHERE id = $1', [id]);
+  return result.rowCount > 0;
+}
+
 module.exports = {
   getTodasCelebracoes,
   criarCelebracao,
   getCelebracaoPorDataHora,  
   getCelebracaoPorId,
-  updateCelebracao
+  updateCelebracao,
+  deleteCelebracao
 };

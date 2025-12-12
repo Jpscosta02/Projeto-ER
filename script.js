@@ -17,6 +17,13 @@ let stats = {
     celebrantes: 0
 };
 
+let currentUser = null;
+let isAdmin = false;
+let confirmDialogResolver = null;
+const NOTIF_STORAGE_PREFIX = "sige_notifications_";
+let notificacoes = [];
+let notificacoesVisiveis = false;
+
 let currentView = "dashboard";
 let celebracaoEditarId = null;
 let celebracaoEditarOriginalData = null;
@@ -37,12 +44,17 @@ async function validarSessaoBoot() {
         }
 
         const user = JSON.parse(stored);
+        currentUser = user;
+        isAdmin = (user.role === "admin");
+
         const resp = await fetch(`${API_URL}/auth/boot`);
         if (!resp.ok) throw new Error("boot check failed");
         const body = await resp.json();
 
         if (!body.bootId || user.bootId !== body.bootId) {
             localStorage.removeItem("sige_user");
+            currentUser = null;
+            isAdmin = false;
             window.location.href = "login.html";
             return false;
         }
@@ -50,6 +62,8 @@ async function validarSessaoBoot() {
     } catch (err) {
         console.error("Falha ao validar sessão/bootId:", err);
         localStorage.removeItem("sige_user");
+        currentUser = null;
+        isAdmin = false;
         window.location.href = "login.html";
         return false;
     }
@@ -405,6 +419,8 @@ function carregarCelebracoes() {
 
             const div = document.createElement("div");
             div.className = "evento-card";
+            const mostrarRemover = container.id === "celebracoes-container-gerir" && isAdmin;
+
 
             div.innerHTML = `
                 <div class="evento-date">
@@ -413,12 +429,16 @@ function carregarCelebracoes() {
                 </div>
 
                 <div class="evento-info">
-                    <h4>
-                        ${ev.tipo}
-                        <button type="button" class="btn-editar" onclick="abrirEditarCelebracao(${ev.id})">✏️</button>
+                    <h4 class="evento-titulo">
+                        <span>${ev.tipo}</span>
                     </h4>
                     <p>${ev.hora} - ${ev.local || ""}</p>
                     <span class="evento-tag">${ev.celebrante_nome || "Celebrante"}</span>
+                </div>
+                
+                <div class="evento-acoes">
+                    <button type="button" class="btn-editar" onclick="abrirEditarCelebracao(${ev.id})" title="Editar">Editar &#9998;</button>
+                    ${mostrarRemover ? `<button type="button" class="btn-remover" onclick="removerCelebracao(${ev.id})" title="Remover">Remover &#128465;</button>` : ""}
                 </div>
             `;
 
@@ -572,6 +592,148 @@ function carregarStats() {
 
 
 // =============================
+//  NOTIFICAÇÕES
+// =============================
+function formatCelebracaoResumo(obj) {
+    if (!obj) return "Celebracao";
+    const tipo = obj.tipo || "Celebracao";
+    const data = obj.data ? String(obj.data).slice(0, 10) : "";
+    const hora = obj.hora || "";
+    const local = obj.local || "";
+
+    let partes = [tipo];
+    if (data) partes.push(`em ${data}`);
+    if (hora) partes.push(`as ${hora}`);
+    if (local) partes.push(`(${local})`);
+
+    return partes.join(" ");
+}
+
+function obterChaveNotificacoes() {
+    if (!currentUser) return `${NOTIF_STORAGE_PREFIX}anon`;
+    const id = currentUser.id || currentUser.email || "user";
+    return `${NOTIF_STORAGE_PREFIX}${id}`;
+}
+
+function carregarNotificacoes() {
+    try {
+        const key = obterChaveNotificacoes();
+        const stored = localStorage.getItem(key);
+        notificacoes = stored ? JSON.parse(stored) : [];
+    } catch {
+        notificacoes = [];
+    }
+    renderizarNotificacoes();
+}
+
+function gravarNotificacoes() {
+    try {
+        const key = obterChaveNotificacoes();
+        localStorage.setItem(key, JSON.stringify(notificacoes));
+    } catch (err) {
+        console.warn("NÆo foi poss¡vel guardar notifica‡äes:", err);
+    }
+}
+
+function formatarDataNotificacao(isoString) {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
+}
+
+function renderizarNotificacoes() {
+    const badge = document.getElementById("notif-badge");
+    const listEl = document.getElementById("notif-list");
+    const naoLidas = notificacoes.filter(n => !n.lida).length;
+
+    if (badge) {
+        if (naoLidas > 0) {
+            badge.textContent = String(naoLidas);
+            badge.classList.remove("hidden");
+        } else {
+            badge.textContent = "";
+            badge.classList.add("hidden");
+        }
+    }
+
+    if (!listEl) return;
+
+    if (!notificacoes.length) {
+        listEl.innerHTML = '<p class="notif-empty">Sem notificações.</p>';
+        return;
+    }
+
+    listEl.innerHTML = notificacoes
+        .map(n => `
+            <div class="notif-item ${n.lida ? "lida" : ""}">
+                <div class="notif-text">${n.mensagem}</div>
+                <div class="notif-time">${formatarDataNotificacao(n.data)}</div>
+            </div>
+        `)
+        .join("");
+}
+
+function adicionarNotificacao(mensagem) {
+    const nova = {
+        id: Date.now(),
+        mensagem,
+        data: new Date().toISOString(),
+        lida: false
+    };
+    notificacoes = [nova, ...notificacoes].slice(0, 50);
+    gravarNotificacoes();
+    renderizarNotificacoes();
+}
+
+function marcarNotificacoesLidas() {
+    notificacoes = notificacoes.map(n => ({ ...n, lida: true }));
+    gravarNotificacoes();
+    renderizarNotificacoes();
+}
+
+function abrirPainelNotificacoes() {
+    const panel = document.getElementById("notif-panel");
+    if (!panel) return;
+    panel.classList.remove("hidden");
+    notificacoesVisiveis = true;
+    marcarNotificacoesLidas();
+}
+
+function fecharPainelNotificacoes() {
+    const panel = document.getElementById("notif-panel");
+    if (!panel) return;
+    panel.classList.add("hidden");
+    notificacoesVisiveis = false;
+}
+
+function togglePainelNotificacoes(event) {
+    event?.stopPropagation();
+    if (notificacoesVisiveis) {
+        fecharPainelNotificacoes();
+    } else {
+        abrirPainelNotificacoes();
+    }
+}
+
+function limparNotificacoes() {
+    notificacoes = [];
+    gravarNotificacoes();
+    renderizarNotificacoes();
+}
+
+function fecharNotificacoesAoClicarFora(event) {
+    const panel = document.getElementById("notif-panel");
+    const toggle = document.getElementById("notif-toggle");
+    if (!panel || !notificacoesVisiveis) return;
+
+    if (!panel.contains(event.target) && (!toggle || !toggle.contains(event.target))) {
+        fecharPainelNotificacoes();
+    }
+}
+
+
+// =============================
 //  DISPONIBILIDADE (CRIAR)
 // =============================
 function mostrarDisponibilidade(msg, estado) {
@@ -683,6 +845,7 @@ async function criarCelebracao(event) {
         }
 
         mostrarMensagemCelebracoes("Celebração registada com sucesso!", "sucesso");
+        adicionarNotificacao(`Celebracao criada: ${formatCelebracaoResumo({ tipo, data, hora, local })}`);
 
         const form = document.getElementById("form-nova-celebracao");
         if (form) form.reset();
@@ -850,6 +1013,7 @@ async function submeterEdicaoCelebracao(event) {
             return;
         }
 
+        adicionarNotificacao(`Celebracao atualizada: ${formatCelebracaoResumo({ tipo, data, hora, local })}`);
         fecharModalEditar();
         await buscarCelebracoes();
         await buscarStats();
@@ -860,6 +1024,76 @@ async function submeterEdicaoCelebracao(event) {
 }
 
 
+async function removerCelebracao(id) {
+    if (!isAdmin) {
+        alert("Apenas administradores podem remover celebraçoes.");
+        return;
+    }
+
+    const celebracao = celebracoes.find(c => Number(c.id) === Number(id));
+    const resumo = celebracao ? formatCelebracaoResumo(celebracao) : "esta celebracao";
+
+    const confirmou = await abrirDialogConfirmacao(`Tem a certeza que deseja remover ${resumo}?`);
+    if (!confirmou) return;
+
+    let apagou = false;
+    try {
+        const resp = await fetch(`${API_URL}/celebracoes/${id}`, { method: "DELETE" });
+        let body = null;
+        if (resp.status !== 204) {
+            try { body = await resp.json(); } catch {}
+        }
+
+        const sucesso = resp.ok || resp.status === 204;
+        if (!sucesso) {
+            const msg = (body && body.mensagem) || "Erro ao remover celebraçao.";
+            alert(msg);
+            return;
+        }
+        apagou = true;
+    } catch (err) {
+        console.error("Erro ao remover celebraçao:", err);
+        alert("Erro de comunicaçao com o servidor.");
+        return;
+    }
+
+    if (apagou) {
+        adicionarNotificacao(`Celebraçao removida: ${celebracao.tipo || "Celebracao"}`);
+        try {
+            await buscarCelebracoes();
+            await buscarStats();
+        } catch (err) {
+            console.error("Erro ao atualizar dados apos remover:", err);
+        }
+    }
+}
+
+function abrirDialogConfirmacao(msg) {
+    return new Promise(resolve => {
+        confirmDialogResolver = resolve;
+        const modal = document.getElementById("confirm-dialog");
+        const texto = document.getElementById("confirm-dialog-message");
+        if (texto) texto.textContent = msg || "";
+        if (modal) modal.classList.remove("hidden");
+    });
+}
+
+function fecharDialogConfirmacao() {
+    const modal = document.getElementById("confirm-dialog");
+    if (modal) modal.classList.add("hidden");
+    confirmDialogResolver = null;
+}
+
+function confirmarDialogoOk() {
+    if (confirmDialogResolver) confirmDialogResolver(true);
+    fecharDialogConfirmacao();
+}
+
+function confirmarDialogoCancelar() {
+    if (confirmDialogResolver) confirmDialogResolver(false);
+    fecharDialogConfirmacao();
+}
+
 // =============================
 //  ON LOAD
 // =============================
@@ -867,6 +1101,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const sessaoValida = await validarSessaoBoot();
     if (!sessaoValida) return;
     mostrarVista("dashboard");
+    carregarNotificacoes();
     buscarDadosBackend();
 
     const dataEl = document.getElementById("nova-celebracao-data");
@@ -889,4 +1124,15 @@ window.addEventListener("DOMContentLoaded", async () => {
     const editHoraEl = document.getElementById("edit-hora");
     if (editDataEl) editDataEl.addEventListener("change", verificarDisponibilidadeEditar);
     if (editHoraEl) editHoraEl.addEventListener("change", verificarDisponibilidadeEditar);
+
+    const btnConfirmOk = document.getElementById("confirm-dialog-ok");
+    const btnConfirmCancel = document.getElementById("confirm-dialog-cancel");
+    if (btnConfirmOk) btnConfirmOk.addEventListener("click", confirmarDialogoOk);
+    if (btnConfirmCancel) btnConfirmCancel.addEventListener("click", confirmarDialogoCancelar);
+
+    const notifToggle = document.getElementById("notif-toggle");
+    const notifClear = document.getElementById("notif-clear");
+    if (notifToggle) notifToggle.addEventListener("click", togglePainelNotificacoes);
+    if (notifClear) notifClear.addEventListener("click", limparNotificacoes);
+    document.addEventListener("click", fecharNotificacoesAoClicarFora);
 });

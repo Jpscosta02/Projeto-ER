@@ -5,7 +5,8 @@ const {
   listarCelebracoes,
   criarNovaCelebracao,
   verificarDisponibilidadeCelebracao,
-  atualizarCelebracao
+  atualizarCelebracao,
+  removerCelebracao
 } = require('../controllers/celebracoesController');
 
 // GET /api/celebracoes  -> lista todas
@@ -18,5 +19,6 @@ router.get('/disponibilidade', verificarDisponibilidadeCelebracao);
 router.post('/', criarNovaCelebracao);
 
 router.put("/:id", atualizarCelebracao);
+router.delete("/:id", removerCelebracao);
 
 module.exports = router;
