@@ -539,6 +539,32 @@ td.text-gray {
     background-color: #a21caf;
 }
 
+.evento-badge-estado {
+    background-color: #047857;
+}
+
+.confirmacao-panel {
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+}
+
+.confirmacao-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.confirmacao-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
 .evento-date {
     background-color: black;
     color: white;

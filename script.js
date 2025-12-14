@@ -29,6 +29,8 @@ let celebracaoEditarId = null;
 let celebracaoEditarOriginalData = null;
 let celebracaoEditarOriginalHora = null;
 let celebracaoEditarOriginalCelebranteId = null;
+let celebracaoEditarEstadoConfirmacao = null;
+let celebracaoEditarIsEspecial = false;
 const CELEBRACOES_POR_PAGINA = 3;
 const paginaCelebracoes = {};
 let filtroCelebranteId = "";
@@ -447,6 +449,10 @@ function carregarCelebracoes() {
             const badgeEspecial = isEspecial ? '<span class="evento-badge evento-badge-especial">Especial</span>' : "";
             div.className = "evento-card" + (isEspecial ? " evento-card-especial" : "");
             const mostrarRemover = container.id === "celebracoes-container-gerir" && isAdmin;
+            const estadoConfirmacao = isEspecial ? formatarEstadoConfirmacao(ev.estado_confirmacao) : null;
+            const badgeEstado = isEspecial
+                ? `<span class="evento-badge evento-badge-estado">${estadoConfirmacao}</span>`
+                : "";
 
 
             div.innerHTML = `
@@ -462,6 +468,7 @@ function carregarCelebracoes() {
                     </h4>
                     <p>${ev.hora} - ${ev.local || ""}</p>
                     <span class="evento-tag">${ev.celebrante_nome || "Celebrante"}</span>
+                    ${badgeEstado ? `<div class="evento-status">${badgeEstado}</div>` : ""}
                 </div>
                 
                 <div class="evento-acoes">
@@ -635,6 +642,15 @@ function formatCelebracaoResumo(obj) {
     if (local) partes.push(`(${local})`);
 
     return partes.join(" ");
+}
+
+function formatarEstadoConfirmacao(estado) {
+    const mapa = {
+        confirmado: "Confirmado",
+        pendente: "Pendente",
+        recusado: "Recusado"
+    };
+    return mapa[String(estado || "").toLowerCase()] || "Pendente";
 }
 
 function obterChaveNotificacoes() {
@@ -933,8 +949,12 @@ function abrirEditarCelebracao(id) {
     celebracaoEditarOriginalData = inputData ? inputData.value : null;
     celebracaoEditarOriginalHora = inputHora ? inputHora.value : null;
     celebracaoEditarOriginalCelebranteId = celebracao.celebrante_id ?? celebracao.celebranteId ?? null;
+    celebracaoEditarEstadoConfirmacao = celebracao.estado_confirmacao || "pendente";
+    celebracaoEditarIsEspecial = !!celebracao.is_especial;
 
     preencherSelectCelebrantes("edit-celebrante", celebracao.celebrante_id);
+
+    atualizarPainelConfirmacao();
 
     const msgBox = document.getElementById("editar-disponibilidade-msg");
     if (msgBox) {
@@ -952,6 +972,8 @@ function fecharModalEditar() {
     celebracaoEditarId = null;
     celebracaoEditarOriginalData = null;
     celebracaoEditarOriginalHora = null;
+    celebracaoEditarEstadoConfirmacao = null;
+    celebracaoEditarIsEspecial = false;
 }
 
 async function verificarDisponibilidadeEditar() {
@@ -1017,6 +1039,85 @@ async function verificarDisponibilidadeEditar() {
         msgBox.textContent = "Erro ao verificar disponibilidade.";
         msgBox.style.color = "red";
         return false;
+    }
+}
+
+function atualizarPainelConfirmacao() {
+    const painel = document.getElementById("confirmacao-panel");
+    const estadoEl = document.getElementById("confirmacao-estado-label");
+    const msgEl = document.getElementById("confirmacao-msg");
+
+    if (!painel) return;
+
+    if (!celebracaoEditarIsEspecial) {
+        painel.classList.add("hidden");
+        if (msgEl) msgEl.textContent = "";
+        return;
+    }
+
+    painel.classList.remove("hidden");
+    if (estadoEl) estadoEl.textContent = formatarEstadoConfirmacao(celebracaoEditarEstadoConfirmacao);
+    if (msgEl) {
+        msgEl.textContent = "";
+        msgEl.className = "mensagens-disponibilidade";
+    }
+}
+
+async function pedirConfirmacaoCelebrante() {
+    if (!celebracaoEditarId) return;
+    const msgEl = document.getElementById("confirmacao-msg");
+
+    try {
+        const resp = await fetch(`${API_URL}/celebracoes/${celebracaoEditarId}/confirmacao/solicitar`, {
+            method: "POST"
+        });
+        let body = null;
+        try { body = await resp.json(); } catch {}
+
+        if (!resp.ok) {
+            const msg = (body && body.mensagem) || "Nao foi possivel pedir confirmacao.";
+            if (msgEl) msgEl.textContent = msg;
+            return;
+        }
+
+        celebracaoEditarEstadoConfirmacao = (body && body.estado_confirmacao) || "pendente";
+        atualizarPainelConfirmacao();
+        adicionarNotificacao("Pedido de confirmacao enviado ao celebrante especial.");
+        await buscarCelebracoes();
+    } catch (err) {
+        console.error("Erro ao pedir confirmacao:", err);
+        if (msgEl) msgEl.textContent = "Erro ao pedir confirmacao.";
+    }
+}
+
+async function marcarConfirmacaoCelebrante(estado) {
+    if (!celebracaoEditarId) return;
+    const msgEl = document.getElementById("confirmacao-msg");
+    const estadoValido = ["confirmado", "pendente", "recusado"].includes(estado);
+    if (!estadoValido) return;
+
+    try {
+        const resp = await fetch(`${API_URL}/celebracoes/${celebracaoEditarId}/confirmacao`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ estado })
+        });
+        let body = null;
+        try { body = await resp.json(); } catch {}
+
+        if (!resp.ok) {
+            const msg = (body && body.mensagem) || "Nao foi possivel atualizar confirmacao.";
+            if (msgEl) msgEl.textContent = msg;
+            return;
+        }
+
+        celebracaoEditarEstadoConfirmacao = (body && body.estado_confirmacao) || estado;
+        atualizarPainelConfirmacao();
+        adicionarNotificacao(`Estado do celebrante definido: ${formatarEstadoConfirmacao(estado)}`);
+        await buscarCelebracoes();
+    } catch (err) {
+        console.error("Erro ao atualizar confirmacao:", err);
+        if (msgEl) msgEl.textContent = "Erro ao atualizar confirmacao.";
     }
 }
 

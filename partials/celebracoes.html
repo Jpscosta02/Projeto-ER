@@ -1,0 +1,146 @@
+<div id="celebracoes-view" style="display: none;">
+                    <div class="tables-grid">
+                        <!-- Formulário Nova Celebração -->
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h3>NOVA CELEBRAÇÃO</h3>
+                            </div>
+                            <div class="table-container form-new-celebration">
+                                <form id="form-nova-celebracao" onsubmit="criarCelebracao(event)">
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="nova-celebracao-data">Data *</label>
+                                            <input type="date" id="nova-celebracao-data" required>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="nova-celebracao-hora">Hora *</label>
+                                            <input type="time" id="nova-celebracao-hora" required>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="nova-celebracao-tipo">Tipo *</label>
+                                            <input type="text" id="nova-celebracao-tipo" required>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="nova-celebracao-celebrante">Celebrante *</label>
+                                            <select id="nova-celebracao-celebrante" required>
+                                                <!-- Preenchido via JS -->
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="nova-celebracao-local">Local</label>
+                                            <input type="text" id="nova-celebracao-local" placeholder="Igreja Matriz, Capela X, ..." required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn-primary">
+                                            Guardar Celebração
+                                        </button>
+                                    </div>
+                                </form>
+                                <div id="disponibilidade-msg" class="mensagens-disponibilidade"></div>
+                                <!-- Mensagens de erro / sucesso -->
+                                <div id="celebracoes-mensagens" class="mensagens-celebracoes"></div>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Próximas Celebrações (Vista de Gestão) -->
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h3>PRÓXIMAS CELEBRAÇÕES</h3>
+                                <button type="button" class="filter-toggle" onclick="toggleFiltroCelebracoes(event)">
+                                    Filtrar 
+                                    <img src="Images/filter.svg" alt="Editar">
+                                </button>
+                            </div>
+
+                            <div id="filtro-celebracoes-menu" class="filter-menu hidden">
+                                <div class="filter-row">
+                                    <label for="filtro-celebrante">Celebrante</label>
+                                    <select id="filtro-celebrante">
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="filter-row">
+                                    <label for="filtro-tipo">Celebração</label>
+                                    <input type="text" id="filtro-tipo" placeholder="Missa, batismo, casamento...">
+                                </div>
+                                <div class="filter-actions">
+                                    <button type="button" class="btn-secondary" onclick="limparFiltroCelebracoes()">Limpar</button>
+                                    <button type="button" class="btn-primary" onclick="aplicarFiltroCelebracoes()">Aplicar</button>
+                                </div>
+                            </div>
+                            <div class="eventos-container" id="celebracoes-container-gerir">
+                                <!-- Preenchido via JavaScript -->
+                            </div>
+                            <div id="confirm-dialog" class="modal confirm-modal hidden">
+                                <div class="modal-content">
+                                    <h2>Confirmar ação</h2>
+                                    <p id="confirm-dialog-message"></p>
+                                    <div class="confirm-actions">
+                                        <button type="button" class="btn-secondary" id="confirm-dialog-cancel">Cancelar</button>
+                                        <button type="button" class="btn-danger" id="confirm-dialog-ok">Remover</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="modal-editar" class="modal hidden">
+                                <div class="modal-content">
+                                    <h2>Editar Celebração</h2>
+
+                                    <form id="form-editar-celebracao">
+                                        <div class="form-group">
+                                            <label>Data:</label>
+                                            <input type="date" id="edit-data">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Hora:</label>
+                                            <input type="time" id="edit-hora">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Tipo:</label>
+                                            <input type="text" id="edit-tipo">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Celebrante:</label>
+                                            <select id="edit-celebrante"></select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Local:</label>
+                                            <input type="text" id="edit-local">
+                                        </div>
+                                        <div id="editar-disponibilidade-msg"></div>
+                                        <div id="confirmacao-panel" class="confirmacao-panel hidden">
+                                            <div class="confirmacao-status">
+                                                <span>Confirmação do celebrante:</span>
+                                                <span id="confirmacao-estado-label" class="evento-badge evento-badge-estado"></span>
+                                            </div>
+                                            <div class="confirmacao-actions">
+                                                <button type="button" class="btn-secondary" onclick="pedirConfirmacaoCelebrante()">Pedir confirmação</button>
+                                                <button type="button" class="btn-primary" onclick="marcarConfirmacaoCelebrante('confirmado')">Marcar confirmado</button>
+                                                <button type="button" class="btn-secondary" onclick="marcarConfirmacaoCelebrante('pendente')">Marcar pendente</button>
+                                            </div>
+                                            <div id="confirmacao-msg" class="mensagens-disponibilidade"></div>
+                                        </div>
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn-primary">Guardar alterações</button>
+                                            <button type="button" onclick="fecharModalEditar()" class="btn-primary">Cancelar</button>
+                                        </div>
+
+                                        
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- fim .content-area -->
+        </div>
+    </div>
+
+    <script src="js/app.core.js"></script>
+    <script src="js/app.notifications.js"></script>
+    <script src="js/app.disponibilidade.js"></script>

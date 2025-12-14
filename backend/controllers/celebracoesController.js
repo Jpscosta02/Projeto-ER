@@ -8,6 +8,8 @@ const {
   deleteCelebracao,
   celebranteEhEspecial,
   existeConflitoCelebranteEspecial,
+  solicitarConfirmacaoCelebrante,
+  atualizarEstadoConfirmacaoCelebrante,
 } = require('../models/Celebracao');
 
 // GET /api/celebracoes
@@ -102,6 +104,70 @@ async function verificarDisponibilidadeCelebracao(req, res) {
   } catch (err) {
     console.error('Erro ao verificar disponibilidade de celebracao:', err);
     return res.status(500).json({ mensagem: 'Erro ao verificar disponibilidade.' });
+  }
+}
+
+// POST /api/celebracoes/:id/confirmacao/solicitar
+async function solicitarConfirmacao(req, res) {
+  const { id } = req.params;
+
+  if (!id || Number.isNaN(Number(id))) {
+    return res.status(400).json({ mensagem: 'ID invalido.' });
+  }
+
+  try {
+    const celebracao = await getCelebracaoPorId(id);
+    if (!celebracao) {
+      return res.status(404).json({ mensagem: 'Celebracao nao encontrada.' });
+    }
+
+    if (!celebracao.is_especial) {
+      return res.status(400).json({ mensagem: 'A confirmacao aplica-se apenas a celebracoes especiais.' });
+    }
+
+    await solicitarConfirmacaoCelebrante(id);
+    return res.json({ estado_confirmacao: 'pendente' });
+  } catch (err) {
+    console.error('Erro ao solicitar confirmacao do celebrante:', err);
+    return res.status(500).json({ mensagem: 'Erro ao solicitar confirmacao.' });
+  }
+}
+
+// POST /api/celebracoes/:id/confirmacao  { estado: 'confirmado' | 'pendente' | 'recusado' }
+async function atualizarEstadoConfirmacao(req, res) {
+  const { id } = req.params;
+  const { estado } = req.body || {};
+
+  if (!id || Number.isNaN(Number(id))) {
+    return res.status(400).json({ mensagem: 'ID invalido.' });
+  }
+
+  if (!estado) {
+    return res.status(400).json({ mensagem: 'Estado obrigatorio.' });
+  }
+
+  try {
+    const celebracao = await getCelebracaoPorId(id);
+    if (!celebracao) {
+      return res.status(404).json({ mensagem: 'Celebracao nao encontrada.' });
+    }
+
+    if (!celebracao.is_especial) {
+      return res.status(400).json({ mensagem: 'A confirmacao aplica-se apenas a celebracoes especiais.' });
+    }
+
+    const atualizado = await atualizarEstadoConfirmacaoCelebrante(id, estado);
+    if (!atualizado) {
+      return res.status(500).json({ mensagem: 'Nao foi possivel atualizar confirmacao.' });
+    }
+
+    return res.json({ estado_confirmacao: atualizado.estado_confirmacao || estado });
+  } catch (err) {
+    console.error('Erro ao atualizar confirmacao:', err);
+    if (err.code === 'ESTADO_INVALIDO') {
+      return res.status(400).json({ mensagem: err.message });
+    }
+    return res.status(500).json({ mensagem: 'Erro ao atualizar confirmacao.' });
   }
 }
 
@@ -219,4 +285,6 @@ module.exports = {
   verificarDisponibilidadeCelebracao,
   atualizarCelebracao,
   removerCelebracao,
+  solicitarConfirmacao,
+  atualizarEstadoConfirmacao,
 };

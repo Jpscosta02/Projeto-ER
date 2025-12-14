@@ -312,7 +312,7 @@
 
                                         <div class="form-group">
                                             <label for="nova-celebracao-tipo">Tipo *</label>
-                                            <input type="text" id="nova-celebracao-tipo">
+                                            <input type="text" id="nova-celebracao-tipo" required>
                                         </div>
 
                                         <div class="form-group">
@@ -324,7 +324,7 @@
 
                                         <div class="form-group">
                                             <label for="nova-celebracao-local">Local</label>
-                                            <input type="text" id="nova-celebracao-local" placeholder="Igreja Matriz, Capela X, ...">
+                                            <input type="text" id="nova-celebracao-local" placeholder="Igreja Matriz, Capela X, ..." required>
                                         </div>
                                     </div>
 
@@ -405,6 +405,18 @@
                                             <input type="text" id="edit-local">
                                         </div>
                                         <div id="editar-disponibilidade-msg"></div>
+                                        <div id="confirmacao-panel" class="confirmacao-panel hidden">
+                                            <div class="confirmacao-status">
+                                                <span>Confirmação do celebrante:</span>
+                                                <span id="confirmacao-estado-label" class="evento-badge evento-badge-estado"></span>
+                                            </div>
+                                            <div class="confirmacao-actions">
+                                                <button type="button" class="btn-secondary" onclick="pedirConfirmacaoCelebrante()">Pedir confirmação</button>
+                                                <button type="button" class="btn-primary" onclick="marcarConfirmacaoCelebrante('confirmado')">Marcar confirmado</button>
+                                                <button type="button" class="btn-secondary" onclick="marcarConfirmacaoCelebrante('pendente')">Marcar pendente</button>
+                                            </div>
+                                            <div id="confirmacao-msg" class="mensagens-disponibilidade"></div>
+                                        </div>
                                         <div class="form-actions">
                                             <button type="submit" class="btn-primary">Guardar alterações</button>
                                             <button type="button" onclick="fecharModalEditar()" class="btn-primary">Cancelar</button>
@@ -421,6 +433,9 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="js/app.core.js"></script>
+    <script src="js/app.notifications.js"></script>
+    <script src="js/app.disponibilidade.js"></script>
+    <script src="js/app.editar.js"></script>
 </body>
 </html>

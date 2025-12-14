@@ -12,7 +12,8 @@ async function getTodasCelebracoes(db) {
   const result = await client.query(
     `SELECT c.*,
             ce.nome AS celebrante_nome,
-            (se.celebracao_id IS NOT NULL) AS is_especial
+            (se.celebracao_id IS NOT NULL) AS is_especial,
+            COALESCE(se.estado_confirmacao, 'pendente') AS estado_confirmacao
        FROM celebracoes c
   LEFT JOIN celebrantes ce ON c.celebrante_id = ce.id
   LEFT JOIN celebracoes_especiais se ON se.celebracao_id = c.id
@@ -25,7 +26,8 @@ async function getCelebracaoPorId(id, db) {
   const client = getDb(db);
   const result = await client.query(
     `SELECT c.*,
-            (se.celebracao_id IS NOT NULL) AS is_especial
+            (se.celebracao_id IS NOT NULL) AS is_especial,
+            COALESCE(se.estado_confirmacao, 'pendente') AS estado_confirmacao
        FROM celebracoes c
   LEFT JOIN celebracoes_especiais se ON se.celebracao_id = c.id
       WHERE c.id = $1`,
@@ -93,13 +95,61 @@ async function removerCelebracaoEspecial(celebracaoId, db) {
   await client.query('DELETE FROM celebracoes_especiais WHERE celebracao_id = $1', [celebracaoId]);
 }
 
+async function solicitarConfirmacaoCelebrante(celebracaoId, db) {
+  const client = getDb(db);
+  await client.query(
+    `INSERT INTO celebracoes_especiais (celebracao_id)
+     VALUES ($1)
+     ON CONFLICT (celebracao_id) DO NOTHING`,
+    [celebracaoId]
+  );
+
+  await client.query(
+    `UPDATE celebracoes_especiais
+        SET estado_confirmacao = 'pendente',
+            confirmacao_pedida_em = NOW(),
+            confirmacao_atualizada_em = NOW()
+      WHERE celebracao_id = $1`,
+    [celebracaoId]
+  );
+}
+
+async function atualizarEstadoConfirmacaoCelebrante(celebracaoId, estado, db) {
+  const estadosValidos = ['pendente', 'confirmado', 'recusado'];
+  if (!estadosValidos.includes(estado)) {
+    const err = new Error('Estado de confirmacao invalido.');
+    err.code = 'ESTADO_INVALIDO';
+    throw err;
+  }
+
+  const client = getDb(db);
+  await client.query(
+    `INSERT INTO celebracoes_especiais (celebracao_id)
+     VALUES ($1)
+     ON CONFLICT (celebracao_id) DO NOTHING`,
+    [celebracaoId]
+  );
+
+  const result = await client.query(
+    `UPDATE celebracoes_especiais
+        SET estado_confirmacao = $2,
+            confirmacao_atualizada_em = NOW()
+      WHERE celebracao_id = $1
+  RETURNING estado_confirmacao`,
+    [celebracaoId, estado]
+  );
+
+  return result.rows[0] || null;
+}
+
 // OBTER CELEBRACAO NESSA DATA/HORA (para REQ-01.5)
 async function getCelebracaoPorDataHora(data, hora, db) {
   const client = getDb(db);
   const result = await client.query(
     `SELECT c.*,
             ce.nome AS celebrante_nome,
-            (se.celebracao_id IS NOT NULL) AS is_especial
+            (se.celebracao_id IS NOT NULL) AS is_especial,
+            COALESCE(se.estado_confirmacao, 'pendente') AS estado_confirmacao
        FROM celebracoes c
   LEFT JOIN celebrantes ce ON c.celebrante_id = ce.id
   LEFT JOIN celebracoes_especiais se ON se.celebracao_id = c.id
@@ -162,8 +212,10 @@ async function criarCelebracao({ data, hora, tipo, local, celebranteId }) {
     if (celebranteEspecial && nova) {
       await marcarCelebracaoEspecial(nova.id, client);
       nova.is_especial = true;
+      nova.estado_confirmacao = 'pendente';
     } else if (nova) {
       nova.is_especial = false;
+      nova.estado_confirmacao = null;
     }
 
     await client.query('COMMIT');
@@ -228,9 +280,11 @@ async function updateCelebracao(id, { data, hora, tipo, local, celebranteId }) {
     if (atualizada && celebranteEspecial) {
       await marcarCelebracaoEspecial(id, client);
       atualizada.is_especial = true;
+      atualizada.estado_confirmacao = atualizada.estado_confirmacao || 'pendente';
     } else if (atualizada) {
       await removerCelebracaoEspecial(id, client);
       atualizada.is_especial = false;
+      atualizada.estado_confirmacao = null;
     }
 
     await client.query('COMMIT');
@@ -271,4 +325,6 @@ module.exports = {
   deleteCelebracao,
   celebranteEhEspecial,
   existeConflitoCelebranteEspecial,
+  solicitarConfirmacaoCelebrante,
+  atualizarEstadoConfirmacaoCelebrante,
 };
