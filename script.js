@@ -443,7 +443,9 @@ function carregarCelebracoes() {
             }
 
             const div = document.createElement("div");
-            div.className = "evento-card";
+            const isEspecial = !!ev.is_especial;
+            const badgeEspecial = isEspecial ? '<span class="evento-badge evento-badge-especial">Especial</span>' : "";
+            div.className = "evento-card" + (isEspecial ? " evento-card-especial" : "");
             const mostrarRemover = container.id === "celebracoes-container-gerir" && isAdmin;
 
 
@@ -456,6 +458,7 @@ function carregarCelebracoes() {
                 <div class="evento-info">
                     <h4 class="evento-titulo">
                         <span>${ev.tipo}</span>
+                        ${badgeEspecial}
                     </h4>
                     <p>${ev.hora} - ${ev.local || ""}</p>
                     <span class="evento-tag">${ev.celebrante_nome || "Celebrante"}</span>
@@ -780,11 +783,13 @@ function mostrarDisponibilidade(msg, estado) {
 async function verificarDisponibilidadeDataHora() {
     const dataEl = document.getElementById("nova-celebracao-data");
     const horaEl = document.getElementById("nova-celebracao-hora");
+    const celebranteEl = document.getElementById("nova-celebracao-celebrante");
 
     if (!dataEl || !horaEl) return;
 
     const data = dataEl.value;
     const hora = horaEl.value;
+    const celebranteId = celebranteEl ? celebranteEl.value : "";
 
     if (!data || !hora) {
         mostrarDisponibilidade("", null);
@@ -792,35 +797,43 @@ async function verificarDisponibilidadeDataHora() {
     }
 
     try {
-        const resp = await fetch(
-            `${API_URL}/celebracoes/disponibilidade?data=${encodeURIComponent(data)}&hora=${encodeURIComponent(hora)}`
-        );
+        const params = new URLSearchParams({ data, hora });
+        if (celebranteId) params.append("celebranteId", celebranteId);
+
+        const resp = await fetch(`${API_URL}/celebracoes/disponibilidade?${params.toString()}`);
 
         if (!resp.ok) {
-            mostrarDisponibilidade("Não foi possível verificar a disponibilidade.", "ocupado");
+            mostrarDisponibilidade("Nao foi possivel verificar a disponibilidade.", "ocupado");
             return;
         }
 
         const body = await resp.json();
 
         if (body.disponivel) {
-            mostrarDisponibilidade("Data e hora livres.", "livre");
+            if (body.celebranteEspecial) {
+                mostrarDisponibilidade(
+                    body.celebranteDisponivel
+                        ? "Celebrante especial disponivel nesta data/hora."
+                        : "Celebrante especial indisponivel nesta data/hora.",
+                    body.celebranteDisponivel ? "livre" : "ocupado"
+                );
+            } else {
+                mostrarDisponibilidade("Data e hora livres.", "livre");
+            }
         } else if (body.celebracao) {
             const c = body.celebracao;
             const info =
-                `${c.tipo || "Celebração"} às ${c.hora} em ${c.local || "local não definido"}` +
-                (c.celebrante_nome ? ` (Celebrante: ${c.celebrante_nome})` : "");
+                `${c.tipo || "Celebracao"} as ${c.hora} em ${c.local || "local nao definido"}` +
+                (c.celebrante_nome ? ` (Celebrante: ${c.celebrante_nome})` : "") +
+                (c.is_especial ? " [especial]" : "");
 
-            mostrarDisponibilidade(
-                "Data e hora ocupadas. Já existe: " + info,
-                "ocupado"
-            );
+            mostrarDisponibilidade("Data e hora ocupadas. Ja existe: " + info, "ocupado");
         } else {
             mostrarDisponibilidade("Data e hora ocupadas.", "ocupado");
         }
     } catch (err) {
         console.error("Erro ao verificar disponibilidade:", err);
-        mostrarDisponibilidade("Erro de comunicação ao verificar disponibilidade.", "ocupado");
+        mostrarDisponibilidade("Erro de comunicacao ao verificar disponibilidade.", "ocupado");
     }
 }
 
@@ -944,12 +957,14 @@ function fecharModalEditar() {
 async function verificarDisponibilidadeEditar() {
     const dataEl = document.getElementById("edit-data");
     const horaEl = document.getElementById("edit-hora");
+    const celebranteEl = document.getElementById("edit-celebrante");
     const msgBox = document.getElementById("editar-disponibilidade-msg");
 
     if (!dataEl || !horaEl || !msgBox) return true;
 
     const data = dataEl.value;
     const hora = horaEl.value;
+    const celebranteId = (celebranteEl && celebranteEl.value) || celebracaoEditarOriginalCelebranteId;
 
     if (!data || !hora) {
         msgBox.textContent = "";
@@ -957,34 +972,46 @@ async function verificarDisponibilidadeEditar() {
         return true;
     }
 
-    if (data === celebracaoEditarOriginalData && hora === celebracaoEditarOriginalHora) {
+    if (
+        data === celebracaoEditarOriginalData &&
+        hora === celebracaoEditarOriginalHora &&
+        (!celebranteEl || celebranteId === celebracaoEditarOriginalCelebranteId)
+    ) {
         msgBox.textContent = "";
         msgBox.className = "";
         return true;
     }
 
     try {
-        const resp = await fetch(
-            `${API_URL}/celebracoes/disponibilidade?data=${encodeURIComponent(data)}&hora=${encodeURIComponent(hora)}`
-        );
+        const params = new URLSearchParams({ data, hora });
+        if (celebranteId) params.append("celebranteId", celebranteId);
+
+        const resp = await fetch(`${API_URL}/celebracoes/disponibilidade?${params.toString()}`);
 
         if (!resp.ok) {
-            msgBox.textContent = "Não foi possível verificar a disponibilidade.";
+            msgBox.textContent = "Nao foi possivel verificar a disponibilidade.";
             msgBox.style.color = "red";
             return false;
         }
 
         const body = await resp.json();
+        const ehMesmaCelebracao = body.celebracao && Number(body.celebracao.id) === celebracaoEditarId;
 
-        if (body.disponivel || (body.celebracao && Number(body.celebracao.id) === celebracaoEditarId)) {
-            msgBox.textContent = "Data e hora disponíveis.";
-            msgBox.style.color = "green";
-            return true;
+        if (!body.disponivel && !ehMesmaCelebracao) {
+            msgBox.textContent = "Data/hora ja ocupadas por outra celebracao.";
+            msgBox.style.color = "red";
+            return false;
         }
 
-        msgBox.textContent = "Data/hora já ocupadas por outra celebração.";
-        msgBox.style.color = "red";
-        return false;
+        if (body.celebranteEspecial && body.celebranteDisponivel === false && !ehMesmaCelebracao) {
+            msgBox.textContent = "Celebrante especial indisponivel nesta data/hora.";
+            msgBox.style.color = "red";
+            return false;
+        }
+
+        msgBox.textContent = "Data e hora disponiveis.";
+        msgBox.style.color = "green";
+        return true;
     } catch (err) {
         console.error("Erro ao verificar disponibilidade (editar):", err);
         msgBox.textContent = "Erro ao verificar disponibilidade.";
@@ -992,6 +1019,7 @@ async function verificarDisponibilidadeEditar() {
         return false;
     }
 }
+
 
 async function submeterEdicaoCelebracao(event) {
     event.preventDefault();
@@ -1141,6 +1169,11 @@ window.addEventListener("DOMContentLoaded", async () => {
         horaEl.addEventListener("input", verificarDisponibilidadeDataHora);
     }
 
+    const celebranteCriarEl = document.getElementById("nova-celebracao-celebrante");
+    if (celebranteCriarEl) {
+        celebranteCriarEl.addEventListener("change", verificarDisponibilidadeDataHora);
+    }
+
     const formEditar = document.getElementById("form-editar-celebracao");
     if (formEditar) {
         formEditar.addEventListener("submit", submeterEdicaoCelebracao);
@@ -1148,8 +1181,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     const editDataEl = document.getElementById("edit-data");
     const editHoraEl = document.getElementById("edit-hora");
+    const editCelebranteEl = document.getElementById("edit-celebrante");
     if (editDataEl) editDataEl.addEventListener("change", verificarDisponibilidadeEditar);
     if (editHoraEl) editHoraEl.addEventListener("change", verificarDisponibilidadeEditar);
+    if (editCelebranteEl) editCelebranteEl.addEventListener("change", verificarDisponibilidadeEditar);
 
     const btnConfirmOk = document.getElementById("confirm-dialog-ok");
     const btnConfirmCancel = document.getElementById("confirm-dialog-cancel");

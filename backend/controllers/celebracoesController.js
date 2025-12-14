@@ -5,7 +5,9 @@ const {
   getCelebracaoPorDataHora,
   criarCelebracao,
   updateCelebracao,
-  deleteCelebracao
+  deleteCelebracao,
+  celebranteEhEspecial,
+  existeConflitoCelebranteEspecial,
 } = require('../models/Celebracao');
 
 // GET /api/celebracoes
@@ -14,8 +16,8 @@ async function listarCelebracoes(req, res) {
     const dados = await getTodasCelebracoes();
     return res.json(dados);
   } catch (err) {
-    console.error('Erro ao buscar celebrações:', err);
-    return res.status(500).json({ error: 'Erro ao buscar celebrações' });
+    console.error('Erro ao buscar celebracoes:', err);
+    return res.status(500).json({ error: 'Erro ao buscar celebracoes' });
   }
 }
 
@@ -26,7 +28,7 @@ async function criarNovaCelebracao(req, res) {
   const { data, hora, tipo, local, celebranteId } = req.body;
 
   if (!data || !hora || !tipo || !celebranteId) {
-    console.warn('Campos em falta ao criar celebração:', {
+    console.warn('Campos em falta ao criar celebracao:', {
       data: !data,
       hora: !hora,
       tipo: !tipo,
@@ -34,20 +36,20 @@ async function criarNovaCelebracao(req, res) {
     });
 
     return res.status(400).json({
-      mensagem: 'Data, hora, tipo e celebrante são obrigatórios.',
+      mensagem: 'Data, hora, tipo e celebrante sao obrigatorios.',
     });
   }
 
   try {
     const nova = await criarCelebracao({ data, hora, tipo, local, celebranteId });
 
-    console.log(`[LOG] Celebração criada (id=${nova.id}) em ${nova.data} às ${nova.hora}.`);
+    console.log(`[LOG] Celebracao criada (id=${nova.id}) em ${nova.data} as ${nova.hora}.`);
 
     return res.status(201).json(nova);
   } catch (err) {
-    console.error('Erro ao criar celebração:', err);
+    console.error('Erro ao criar celebracao:', err);
 
-    if (err.code === 'CONFLITO_AGENDA') {
+    if (err.code === 'CONFLITO_AGENDA' || err.code === 'CONFLITO_CELEBRANTE_ESPECIAL') {
       return res.status(409).json({ mensagem: err.message });
     }
 
@@ -55,52 +57,66 @@ async function criarNovaCelebracao(req, res) {
       return res.status(400).json({ mensagem: err.message });
     }
 
-    return res.status(500).json({ mensagem: 'Erro ao criar celebração.' });
+    return res.status(500).json({ mensagem: 'Erro ao criar celebracao.' });
   }
 }
 
-// GET /api/celebracoes/disponibilidade?data=YYYY-MM-DD&hora=HH:MM
+// GET /api/celebracoes/disponibilidade?data=YYYY-MM-DD&hora=HH:MM[&celebranteId=...]
 async function verificarDisponibilidadeCelebracao(req, res) {
-  const { data, hora } = req.query;
+  const { data, hora, celebranteId } = req.query;
 
   if (!data || !hora) {
     return res.status(400).json({
-      mensagem: 'Data e hora são obrigatórias para verificar disponibilidade.',
+      mensagem: 'Data e hora sao obrigatorias para verificar disponibilidade.',
     });
   }
 
   try {
     const celebracao = await getCelebracaoPorDataHora(data, hora);
+    const celebranteIdNum = celebranteId ? Number(celebranteId) : null;
+    const celebranteEspecial =
+      celebranteIdNum && !Number.isNaN(celebranteIdNum)
+        ? await celebranteEhEspecial(celebranteIdNum)
+        : false;
+
+    let celebranteDisponivel = true;
+    if (celebranteEspecial && celebranteIdNum && !Number.isNaN(celebranteIdNum)) {
+      const conflito = await existeConflitoCelebranteEspecial(celebranteIdNum, data, hora);
+      celebranteDisponivel = !conflito;
+    }
 
     if (!celebracao) {
-      return res.json({ disponivel: true });
+      return res.json({
+        disponivel: true,
+        celebranteEspecial,
+        celebranteDisponivel,
+      });
     }
 
     return res.json({
       disponivel: false,
       celebracao,
+      celebranteEspecial,
+      celebranteDisponivel,
     });
   } catch (err) {
-    console.error('Erro ao verificar disponibilidade de celebração:', err);
+    console.error('Erro ao verificar disponibilidade de celebracao:', err);
     return res.status(500).json({ mensagem: 'Erro ao verificar disponibilidade.' });
   }
 }
 
-// --------- FUNÇÕES AUXILIARES PARA NORMALIZAR DATA/HORA ---------
+// --------- FUNCOES AUXILIARES PARA NORMALIZAR DATA/HORA ---------
 function normalizarDataValor(valor) {
   if (!valor) return null;
-  // Se vier Date do PG
   if (valor instanceof Date) {
     return valor.toISOString().slice(0, 10); // YYYY-MM-DD
   }
-  // Se vier string já em YYYY-MM-DD ou ISO, cortamos
   return String(valor).slice(0, 10);
 }
 
 function normalizarHoraValor(valor) {
   if (!valor) return null;
-  // Hora pode vir "HH:MM" ou "HH:MM:SS", ficamos só com "HH:MM"
-  return String(valor).slice(0, 5);
+  return String(valor).slice(0, 5); // HH:MM
 }
 
 // PUT /api/celebracoes/:id
@@ -109,39 +125,36 @@ async function atualizarCelebracao(req, res) {
   const { data, hora, tipo, celebranteId, local } = req.body;
 
   if (!id || Number.isNaN(Number(id))) {
-    return res.status(400).json({ mensagem: 'ID inválido.' });
+    return res.status(400).json({ mensagem: 'ID invalido.' });
   }
 
   if (!data || !hora || !tipo || !celebranteId) {
     return res.status(400).json({
-      mensagem: 'Data, hora, tipo e celebrante são obrigatórios para atualizar.',
+      mensagem: 'Data, hora, tipo e celebrante sao obrigatorios para atualizar.',
     });
   }
 
   try {
     const existente = await getCelebracaoPorId(id);
     if (!existente) {
-      return res.status(404).json({ mensagem: 'Celebração não encontrada.' });
+      return res.status(404).json({ mensagem: 'Celebracao nao encontrada.' });
     }
 
-    // Normalizar valores antigos e novos
     const dataExistenteNorm = normalizarDataValor(existente.data);
     const horaExistenteNorm = normalizarHoraValor(existente.hora);
-
     const dataNovaNorm = normalizarDataValor(data);
     const horaNovaNorm = normalizarHoraValor(hora);
 
-    // Ver se o utilizador MUDOU mesmo a data/hora
+    // Mantem a verificacao de conflito de data/hora (sem considerar celebrante)
     const alterouDataHora =
       dataExistenteNorm !== dataNovaNorm || horaExistenteNorm !== horaNovaNorm;
 
     if (alterouDataHora) {
-      // Só aqui verificamos conflito com outras celebrações
       const conflito = await getCelebracaoPorDataHora(dataNovaNorm, horaNovaNorm);
       if (conflito && Number(conflito.id) !== Number(id)) {
         return res
           .status(409)
-          .json({ mensagem: 'Já existe outra celebração nesta data/hora.' });
+          .json({ mensagem: 'Ja existe outra celebracao nesta data/hora.' });
       }
     }
 
@@ -154,17 +167,22 @@ async function atualizarCelebracao(req, res) {
     });
 
     if (!atualizada) {
-      return res.status(500).json({ mensagem: 'Não foi possível atualizar a celebração.' });
+      return res.status(500).json({ mensagem: 'Nao foi possivel atualizar a celebracao.' });
     }
 
     console.log(
-      `[LOG] Celebração ID=${id} foi alterada. Nova data=${dataNovaNorm}, hora=${horaNovaNorm}, tipo=${tipo}, celebranteId=${celebranteId}, local=${local}.`
+      `[LOG] Celebracao ID=${id} foi alterada. Nova data=${dataNovaNorm}, hora=${horaNovaNorm}, tipo=${tipo}, celebranteId=${celebranteId}, local=${local}.`
     );
 
     return res.json(atualizada);
   } catch (err) {
-    console.error('Erro ao atualizar celebração:', err);
-    return res.status(500).json({ mensagem: 'Erro ao atualizar celebração.' });
+    console.error('Erro ao atualizar celebracao:', err);
+
+    if (err.code === 'CONFLITO_AGENDA' || err.code === 'CONFLITO_CELEBRANTE_ESPECIAL') {
+      return res.status(409).json({ mensagem: err.message });
+    }
+
+    return res.status(500).json({ mensagem: 'Erro ao atualizar celebracao.' });
   }
 }
 
@@ -173,25 +191,25 @@ async function removerCelebracao(req, res) {
   const { id } = req.params;
 
   if (!id || Number.isNaN(Number(id))) {
-    return res.status(400).json({ mensagem: 'ID inv lido.' });
+    return res.status(400).json({ mensagem: 'ID invalido.' });
   }
 
   try {
     const existente = await getCelebracaoPorId(id);
     if (!existente) {
-      return res.status(404).json({ mensagem: 'Celebra‡Æo nÆo encontrada.' });
+      return res.status(404).json({ mensagem: 'Celebracao nao encontrada.' });
     }
 
     const apagou = await deleteCelebracao(id);
     if (!apagou) {
-      return res.status(500).json({ mensagem: 'NÆo foi poss¡vel remover a celebra‡Æo.' });
+      return res.status(500).json({ mensagem: 'Nao foi possivel remover a celebracao.' });
     }
 
-    console.log(`[LOG] Celebra‡Æo ID=${id} removida.`);
+    console.log(`[LOG] Celebracao ID=${id} removida.`);
     return res.status(204).send();
   } catch (err) {
-    console.error('Erro ao remover celebra‡Æo:', err);
-    return res.status(500).json({ mensagem: 'Erro ao remover celebra‡Æo.' });
+    console.error('Erro ao remover celebracao:', err);
+    return res.status(500).json({ mensagem: 'Erro ao remover celebracao.' });
   }
 }
 

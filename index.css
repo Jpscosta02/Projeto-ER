@@ -519,6 +519,26 @@ td.text-gray {
     border-color: black;
 }
 
+.evento-card-especial {
+    border-color: #a21caf;
+    box-shadow: 0 0 0 1px rgba(162, 28, 175, 0.15);
+}
+
+.evento-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    background-color: #2563eb;
+    color: #fff;
+    vertical-align: middle;
+}
+
+.evento-badge-especial {
+    background-color: #a21caf;
+}
+
 .evento-date {
     background-color: black;
     color: white;
