@@ -157,8 +157,7 @@
 
             <!-- Content Area -->
             <div class="content-area">
-                <!-- VISTA DASHBOARD (CONTEÚDO ORIGINAL) -->
-                <div id="dashboard-view">
+    <div id="dashboard-view">
                     <!-- Stats Cards -->
                     <div class="stats-grid">
                         <div class="stat-card stat-card-black">
@@ -290,7 +289,9 @@
                 </div>
 
                 <!-- VISTA GESTÃO DE CELEBRAÇÕES (SPA) -->
-                <div id="celebracoes-view" style="display: none;">
+                
+
+    <div id="celebracoes-view" style="display: none;">
                     <div class="tables-grid">
                         <!-- Formulário Nova Celebração -->
                         <div class="table-card">
@@ -405,19 +406,7 @@
                                             <input type="text" id="edit-local">
                                         </div>
                                         <div id="editar-disponibilidade-msg"></div>
-                                        <div id="confirmacao-panel" class="confirmacao-panel hidden">
-                                            <div class="confirmacao-status">
-                                                <span>Confirmação do celebrante:</span>
-                                                <span id="confirmacao-estado-label" class="evento-badge evento-badge-estado"></span>
-                                            </div>
-                                            <div class="confirmacao-actions">
-                                                <button type="button" class="btn-secondary" onclick="pedirConfirmacaoCelebrante()">Pedir confirmação</button>
-                                                <button type="button" class="btn-primary" onclick="marcarConfirmacaoCelebrante('confirmado')">Marcar confirmado</button>
-                                                <button type="button" class="btn-secondary" onclick="marcarConfirmacaoCelebrante('pendente')">Marcar pendente</button>
-                                            </div>
-                                            <div id="confirmacao-msg" class="mensagens-disponibilidade"></div>
-                                        </div>
-                                        <div class="form-actions">
+<div class="form-actions">
                                             <button type="submit" class="btn-primary">Guardar alterações</button>
                                             <button type="button" onclick="fecharModalEditar()" class="btn-primary">Cancelar</button>
                                         </div>

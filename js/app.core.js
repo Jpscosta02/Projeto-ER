@@ -23,6 +23,7 @@ let confirmDialogResolver = null;
 const NOTIF_STORAGE_PREFIX = "sige_notifications_";
 let notificacoes = [];
 let notificacoesVisiveis = false;
+let confirmacoesPendentes = [];
 
 let currentView = "dashboard";
 let celebracaoEditarId = null;
@@ -163,6 +164,8 @@ async function buscarDadosBackend() {
         buscarCelebrantes(),
         buscarStats()
     ]);
+
+    await buscarConfirmacoesPendentesCelebrante();
 }
 
 
@@ -449,11 +452,10 @@ function carregarCelebracoes() {
             const badgeEspecial = isEspecial ? '<span class="evento-badge evento-badge-especial">Especial</span>' : "";
             div.className = "evento-card" + (isEspecial ? " evento-card-especial" : "");
             const mostrarRemover = container.id === "celebracoes-container-gerir" && isAdmin;
-            const estadoConfirmacao = isEspecial ? formatarEstadoConfirmacao(ev.estado_confirmacao) : null;
+            const estadoSlug = String(ev.estado_confirmacao || "pendente").toLowerCase();
             const badgeEstado = isEspecial
-                ? `<span class="evento-badge evento-badge-estado">${estadoConfirmacao}</span>`
+                ? `<span class="evento-badge evento-badge-estado badge-${estadoSlug}">${formatarEstadoConfirmacao(ev.estado_confirmacao)}</span>`
                 : "";
-
 
             div.innerHTML = `
                 <div class="evento-date">
@@ -464,16 +466,20 @@ function carregarCelebracoes() {
                 <div class="evento-info">
                     <h4 class="evento-titulo">
                         <span>${ev.tipo}</span>
-                        ${badgeEspecial}
                     </h4>
                     <p>${ev.hora} - ${ev.local || ""}</p>
-                    <span class="evento-tag">${ev.celebrante_nome || "Celebrante"}</span>
-                    ${badgeEstado ? `<div class="evento-status">${badgeEstado}</div>` : ""}
+                    <span class="evento-tag" >${ev.celebrante_nome || "Celebrante"}</span>
                 </div>
-                
-                <div class="evento-acoes">
-                    <button type="button" class="btn-editar" onclick="abrirEditarCelebracao(${ev.id})" title="Editar">Editar &#9998;</button>
-                    ${mostrarRemover ? `<button type="button" class="btn-remover" onclick="removerCelebracao(${ev.id})" title="Remover">Remover &#128465;</button>` : ""}
+
+                <div class="evento-acoes-col">
+                        <div class="evento-tags">
+                            ${badgeEspecial}
+                            ${badgeEstado}
+                        </div>
+                        <div class="evento-acoes">
+                            <button type="button" class="btn-editar" onclick="abrirEditarCelebracao(${ev.id})" title="Editar">Editar &#9998;</button>
+                            ${mostrarRemover ? `<button type="button" class="btn-remover" onclick="removerCelebracao(${ev.id})" title="Remover">Remover &#128465;</button>` : ""}
+                        </div>
                 </div>
             `;
 
@@ -580,6 +586,12 @@ async function buscarCelebrantes() {
     }
 }
 
+function celebranteAtualEspecial() {
+    if (!currentUser || !celebrantes || !celebrantes.length) return false;
+    const encontrado = celebrantes.find(c => Number(c.id) === Number(currentUser.id));
+    return !!(encontrado && encontrado.especial);
+}
+
 function preencherSelectCelebrantes(selectId, selectedId = null) {
     const select = document.getElementById(selectId);
     if (!select) return;
@@ -625,4 +637,89 @@ function carregarStats() {
     if (sceb) sceb.textContent = stats.celebrantes ?? 0;
 }
 
+// -----------------------------
+// CONFIRMACOES PENDENTES (Celebrante especial)
+// -----------------------------
+async function buscarConfirmacoesPendentesCelebrante() {
+    if (!currentUser) return;
+    if (!celebranteAtualEspecial()) {
+        renderConfirmacoesPendentes([]);
+        return;
+    }
 
+    try {
+        const resp = await fetch(`${API_URL}/celebrantes/${currentUser.id}/confirmacoes-pendentes`);
+        if (!resp.ok) throw new Error("fail");
+        confirmacoesPendentes = await resp.json();
+        (confirmacoesPendentes || []).forEach(adicionarNotificacaoConfirmacao);
+        renderConfirmacoesPendentes(confirmacoesPendentes);
+    } catch (err) {
+        console.error("Erro ao buscar confirmacoes pendentes:", err);
+    }
+}
+
+function renderConfirmacoesPendentes(lista = []) {
+    const card = document.getElementById("confirmacoes-pendentes-card");
+    const container = document.getElementById("confirmacoes-pendentes-container");
+    if (!card || !container) return;
+
+    if (!celebranteAtualEspecial()) {
+        card.style.display = "none";
+        return;
+    }
+
+    card.style.display = "block";
+
+    if (!lista.length) {
+        container.innerHTML = '<p style="padding: 16px; text-align:center; color:#777;">Sem pedidos pendentes.</p>';
+        return;
+    }
+
+    container.innerHTML = lista
+        .map(item => {
+            const dataStr = item.data ? String(item.data).slice(0, 10) : "";
+            const horaStr = item.hora || "";
+            const resumo = `${item.tipo || "Celebracao"} em ${dataStr} às ${horaStr}`;
+            return `
+                <div class="confirmacao-item">
+                    <div>
+                        <div class="confirmacao-titulo">${resumo}</div>
+                        <div class="confirmacao-local">${item.local || ""}</div>
+                    </div>
+                    <div class="confirmacao-btns">
+                        <button class="btn-primary" onclick="responderConfirmacao(${item.id}, 'confirmado')">Confirmar</button>
+                        <button class="btn-secondary" onclick="responderConfirmacao(${item.id}, 'recusado')">Recusar</button>
+                    </div>
+                </div>
+            `;
+        })
+        .join("");
+}
+
+async function responderConfirmacao(celebracaoId, estado) {
+    if (!celebracaoId || !estado) return false;
+    try {
+        const resp = await fetch(`${API_URL}/celebracoes/${celebracaoId}/confirmacao`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ estado })
+        });
+        let body = null;
+        try { body = await resp.json(); } catch {}
+
+        if (!resp.ok) {
+            const msg = (body && body.mensagem) || "Nao foi possivel atualizar confirmacao.";
+            alert(msg);
+            return false;
+        }
+
+        adicionarNotificacao(`Estado atualizado: ${formatarEstadoConfirmacao(estado)}`);
+        await buscarConfirmacoesPendentesCelebrante();
+        await buscarCelebracoes();
+        return true;
+    } catch (err) {
+        console.error("Erro ao responder confirmacao:", err);
+        alert("Erro ao responder confirmacao.");
+        return false;
+    }
+}

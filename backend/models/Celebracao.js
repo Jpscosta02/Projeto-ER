@@ -106,9 +106,7 @@ async function solicitarConfirmacaoCelebrante(celebracaoId, db) {
 
   await client.query(
     `UPDATE celebracoes_especiais
-        SET estado_confirmacao = 'pendente',
-            confirmacao_pedida_em = NOW(),
-            confirmacao_atualizada_em = NOW()
+        SET estado_confirmacao = 'pendente'
       WHERE celebracao_id = $1`,
     [celebracaoId]
   );
@@ -132,14 +130,34 @@ async function atualizarEstadoConfirmacaoCelebrante(celebracaoId, estado, db) {
 
   const result = await client.query(
     `UPDATE celebracoes_especiais
-        SET estado_confirmacao = $2,
-            confirmacao_atualizada_em = NOW()
+        SET estado_confirmacao = $2
       WHERE celebracao_id = $1
   RETURNING estado_confirmacao`,
     [celebracaoId, estado]
   );
 
   return result.rows[0] || null;
+}
+
+async function getConfirmacoesPendentesParaCelebrante(celebranteId, db) {
+  const client = getDb(db);
+  const result = await client.query(
+    `SELECT c.id,
+            c.data,
+            c.hora,
+            c.tipo,
+            c.local,
+            ce.nome AS celebrante_nome,
+            COALESCE(se.estado_confirmacao, 'pendente') AS estado_confirmacao
+       FROM celebracoes c
+  INNER JOIN celebracoes_especiais se ON se.celebracao_id = c.id
+  LEFT JOIN celebrantes ce ON ce.id = c.celebrante_id
+      WHERE c.celebrante_id = $1
+        AND COALESCE(se.estado_confirmacao, 'pendente') = 'pendente'
+   ORDER BY c.data ASC, c.hora ASC`,
+    [celebranteId]
+  );
+  return result.rows;
 }
 
 // OBTER CELEBRACAO NESSA DATA/HORA (para REQ-01.5)
@@ -327,4 +345,5 @@ module.exports = {
   existeConflitoCelebranteEspecial,
   solicitarConfirmacaoCelebrante,
   atualizarEstadoConfirmacaoCelebrante,
+  getConfirmacoesPendentesParaCelebrante,
 };

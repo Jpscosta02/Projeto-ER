@@ -81,12 +81,27 @@ function renderizarNotificacoes() {
     }
 
     listEl.innerHTML = notificacoes
-        .map(n => `
+        .map(n => {
+            if (n.tipo === "confirmacao" && !n.resolvido) {
+                return `
+            <div class="notif-item ${n.lida ? "lida" : ""}">
+                <div class="notif-text">${n.mensagem}</div>
+                <div class="notif-actions">
+                    <button class="notif-btn success" onclick="responderConfirmacaoNotificacao('${n.id}', ${n.celebracaoId}, 'confirmado')">✓</button>
+                    <button class="notif-btn danger" onclick="responderConfirmacaoNotificacao('${n.id}', ${n.celebracaoId}, 'recusado')">✕</button>
+                </div>
+                <div class="notif-time">${formatarDataNotificacao(n.data)}</div>
+            </div>
+                `;
+            }
+
+            return `
             <div class="notif-item ${n.lida ? "lida" : ""}">
                 <div class="notif-text">${n.mensagem}</div>
                 <div class="notif-time">${formatarDataNotificacao(n.data)}</div>
             </div>
-        `)
+            `;
+        })
         .join("");
 }
 
@@ -100,6 +115,46 @@ function adicionarNotificacao(mensagem) {
     notificacoes = [nova, ...notificacoes].slice(0, 50);
     gravarNotificacoes();
     renderizarNotificacoes();
+}
+
+function adicionarNotificacaoConfirmacao(celebracao) {
+    if (!celebracao || !celebracao.id) return;
+    const existe = notificacoes.some(
+        n => n.tipo === "confirmacao" && n.celebracaoId === celebracao.id && !n.resolvido
+    );
+    if (existe) return;
+
+    const nova = {
+        id: `confirm-${celebracao.id}-${Date.now()}`,
+        tipo: "confirmacao",
+        celebracaoId: celebracao.id,
+        mensagem: `Confirmar presenca em ${formatCelebracaoResumo(celebracao)}?`,
+        data: new Date().toISOString(),
+        lida: false,
+        resolvido: false
+    };
+    notificacoes = [nova, ...notificacoes].slice(0, 50);
+    gravarNotificacoes();
+    renderizarNotificacoes();
+}
+
+function marcarNotificacaoResolvida(id) {
+    notificacoes = notificacoes.map(n =>
+        n.id === id ? { ...n, lida: true, resolvido: true } : n
+    );
+    gravarNotificacoes();
+}
+
+async function responderConfirmacaoNotificacao(notifId, celebracaoId, estado) {
+    try {
+        const ok = await responderConfirmacao(celebracaoId, estado);
+        if (ok) {
+            marcarNotificacaoResolvida(notifId);
+            renderizarNotificacoes();
+        }
+    } catch (err) {
+        console.error("Erro ao responder confirmacao via notificacao:", err);
+    }
 }
 
 function marcarNotificacoesLidas() {
@@ -147,5 +202,3 @@ function fecharNotificacoesAoClicarFora(event) {
         fecharPainelNotificacoes();
     }
 }
-
-

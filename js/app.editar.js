@@ -1,18 +1,12 @@
 // =============================
-//  EDITAR CELEBRAÇÃO
+//  EDITAR CELEBRACAO
 // =============================
 function abrirEditarCelebracao(id) {
     const modal = document.getElementById("modal-editar");
-    if (!modal) {
-        console.warn("Modal de edição não existe no HTML.");
-        return;
-    }
+    if (!modal) return;
 
     const celebracao = celebracoes.find(c => Number(c.id) === Number(id));
-    if (!celebracao) {
-        console.warn("Celebração não encontrada para edição:", id);
-        return;
-    }
+    if (!celebracao) return;
 
     celebracaoEditarId = Number(id);
 
@@ -21,24 +15,16 @@ function abrirEditarCelebracao(id) {
     const inputTipo = document.getElementById("edit-tipo");
     const inputLocal = document.getElementById("edit-local");
 
-    if (inputData) {
-        inputData.value = celebracao.data ? celebracao.data.substring(0, 10) : "";
-    }
-    if (inputHora) {
-        inputHora.value = celebracao.hora || "";
-    }
+    if (inputData) inputData.value = celebracao.data ? celebracao.data.substring(0, 10) : "";
+    if (inputHora) inputHora.value = celebracao.hora || "";
     if (inputTipo) inputTipo.value = celebracao.tipo || "";
     if (inputLocal) inputLocal.value = celebracao.local || "";
 
     celebracaoEditarOriginalData = inputData ? inputData.value : null;
     celebracaoEditarOriginalHora = inputHora ? inputHora.value : null;
     celebracaoEditarOriginalCelebranteId = celebracao.celebrante_id ?? celebracao.celebranteId ?? null;
-    celebracaoEditarEstadoConfirmacao = celebracao.estado_confirmacao || "pendente";
-    celebracaoEditarIsEspecial = !!celebracao.is_especial;
 
     preencherSelectCelebrantes("edit-celebrante", celebracao.celebrante_id);
-
-    atualizarPainelConfirmacao();
 
     const msgBox = document.getElementById("editar-disponibilidade-msg");
     if (msgBox) {
@@ -56,8 +42,7 @@ function fecharModalEditar() {
     celebracaoEditarId = null;
     celebracaoEditarOriginalData = null;
     celebracaoEditarOriginalHora = null;
-    celebracaoEditarEstadoConfirmacao = null;
-    celebracaoEditarIsEspecial = false;
+    celebracaoEditarOriginalCelebranteId = null;
 }
 
 async function verificarDisponibilidadeEditar() {
@@ -126,91 +111,11 @@ async function verificarDisponibilidadeEditar() {
     }
 }
 
-function atualizarPainelConfirmacao() {
-    const painel = document.getElementById("confirmacao-panel");
-    const estadoEl = document.getElementById("confirmacao-estado-label");
-    const msgEl = document.getElementById("confirmacao-msg");
-
-    if (!painel) return;
-
-    if (!celebracaoEditarIsEspecial) {
-        painel.classList.add("hidden");
-        if (msgEl) msgEl.textContent = "";
-        return;
-    }
-
-    painel.classList.remove("hidden");
-    if (estadoEl) estadoEl.textContent = formatarEstadoConfirmacao(celebracaoEditarEstadoConfirmacao);
-    if (msgEl) {
-        msgEl.textContent = "";
-        msgEl.className = "mensagens-disponibilidade";
-    }
-}
-
-async function pedirConfirmacaoCelebrante() {
-    if (!celebracaoEditarId) return;
-    const msgEl = document.getElementById("confirmacao-msg");
-
-    try {
-        const resp = await fetch(`${API_URL}/celebracoes/${celebracaoEditarId}/confirmacao/solicitar`, {
-            method: "POST"
-        });
-        let body = null;
-        try { body = await resp.json(); } catch {}
-
-        if (!resp.ok) {
-            const msg = (body && body.mensagem) || "Nao foi possivel pedir confirmacao.";
-            if (msgEl) msgEl.textContent = msg;
-            return;
-        }
-
-        celebracaoEditarEstadoConfirmacao = (body && body.estado_confirmacao) || "pendente";
-        atualizarPainelConfirmacao();
-        adicionarNotificacao("Pedido de confirmacao enviado ao celebrante especial.");
-        await buscarCelebracoes();
-    } catch (err) {
-        console.error("Erro ao pedir confirmacao:", err);
-        if (msgEl) msgEl.textContent = "Erro ao pedir confirmacao.";
-    }
-}
-
-async function marcarConfirmacaoCelebrante(estado) {
-    if (!celebracaoEditarId) return;
-    const msgEl = document.getElementById("confirmacao-msg");
-    const estadoValido = ["confirmado", "pendente", "recusado"].includes(estado);
-    if (!estadoValido) return;
-
-    try {
-        const resp = await fetch(`${API_URL}/celebracoes/${celebracaoEditarId}/confirmacao`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ estado })
-        });
-        let body = null;
-        try { body = await resp.json(); } catch {}
-
-        if (!resp.ok) {
-            const msg = (body && body.mensagem) || "Nao foi possivel atualizar confirmacao.";
-            if (msgEl) msgEl.textContent = msg;
-            return;
-        }
-
-        celebracaoEditarEstadoConfirmacao = (body && body.estado_confirmacao) || estado;
-        atualizarPainelConfirmacao();
-        adicionarNotificacao(`Estado do celebrante definido: ${formatarEstadoConfirmacao(estado)}`);
-        await buscarCelebracoes();
-    } catch (err) {
-        console.error("Erro ao atualizar confirmacao:", err);
-        if (msgEl) msgEl.textContent = "Erro ao atualizar confirmacao.";
-    }
-}
-
-
 async function submeterEdicaoCelebracao(event) {
     event.preventDefault();
 
     if (celebracaoEditarId == null) {
-        alert("Nenhuma celebração selecionada para edição.");
+        alert("Nenhuma celebracao selecionada para edicao.");
         return;
     }
 
@@ -222,7 +127,7 @@ async function submeterEdicaoCelebracao(event) {
     const celebranteEscolhido = celebranteId || celebracaoEditarOriginalCelebranteId;
 
     if (!data || !hora || !tipo || !celebranteEscolhido) {
-        alert("Preencha todos os campos obrigatórios.");
+        alert("Preencha todos os campos obrigatorios.");
         return;
     }
 
@@ -239,14 +144,13 @@ async function submeterEdicaoCelebracao(event) {
         try { body = await resp.json(); } catch {}
 
         if (!resp.ok) {
-            // Se for conflito (409), mostra mensagem no formulário em vez de alert
             if (resp.status === 409 && msgBox) {
-                msgBox.textContent = (body && body.mensagem) || "Data/hora já ocupadas por outra celebração.";
+                msgBox.textContent = (body && body.mensagem) || "Data/hora ja ocupadas por outra celebracao.";
                 msgBox.style.color = "red";
                 return;
             }
 
-            const msg = (body && body.mensagem) || "Erro ao atualizar celebração.";
+            const msg = (body && body.mensagem) || "Erro ao atualizar celebracao.";
             alert(msg);
             return;
         }
@@ -256,15 +160,14 @@ async function submeterEdicaoCelebracao(event) {
         await buscarCelebracoes();
         await buscarStats();
     } catch (err) {
-        console.error("Erro ao atualizar celebração:", err);
-        alert("Erro de comunicação com o servidor.");
+        console.error("Erro ao atualizar celebracao:", err);
+        alert("Erro de comunicacao com o servidor.");
     }
 }
 
-
 async function removerCelebracao(id) {
     if (!isAdmin) {
-        alert("Apenas administradores podem remover celebraçoes.");
+        alert("Apenas administradores podem remover celebracoes.");
         return;
     }
 
@@ -284,19 +187,19 @@ async function removerCelebracao(id) {
 
         const sucesso = resp.ok || resp.status === 204;
         if (!sucesso) {
-            const msg = (body && body.mensagem) || "Erro ao remover celebraçao.";
+            const msg = (body && body.mensagem) || "Erro ao remover celebracao.";
             alert(msg);
             return;
         }
         apagou = true;
     } catch (err) {
-        console.error("Erro ao remover celebraçao:", err);
-        alert("Erro de comunicaçao com o servidor.");
+        console.error("Erro ao remover celebracao:", err);
+        alert("Erro de comunicacao com o servidor.");
         return;
     }
 
     if (apagou) {
-        adicionarNotificacao(`Celebraçao removida: ${celebracao.tipo || "Celebracao"}`);
+        adicionarNotificacao(`Celebracao removida: ${celebracao?.tipo || "Celebracao"}`);
         try {
             await buscarCelebracoes();
             await buscarStats();

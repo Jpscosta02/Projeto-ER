@@ -10,6 +10,7 @@ const {
   existeConflitoCelebranteEspecial,
   solicitarConfirmacaoCelebrante,
   atualizarEstadoConfirmacaoCelebrante,
+  getConfirmacoesPendentesParaCelebrante,
 } = require('../models/Celebracao');
 
 // GET /api/celebracoes
@@ -171,6 +172,22 @@ async function atualizarEstadoConfirmacao(req, res) {
   }
 }
 
+// GET /api/celebrantes/:id/confirmacoes-pendentes
+async function listarConfirmacoesPendentesCelebrante(req, res) {
+  const { id } = req.params;
+  if (!id || Number.isNaN(Number(id))) {
+    return res.status(400).json({ mensagem: 'ID invalido.' });
+  }
+
+  try {
+    const pendentes = await getConfirmacoesPendentesParaCelebrante(id);
+    return res.json(pendentes);
+  } catch (err) {
+    console.error('Erro ao obter confirmacoes pendentes:', err);
+    return res.status(500).json({ mensagem: 'Erro ao obter confirmacoes pendentes.' });
+  }
+}
+
 // --------- FUNCOES AUXILIARES PARA NORMALIZAR DATA/HORA ---------
 function normalizarDataValor(valor) {
   if (!valor) return null;
@@ -287,4 +304,5 @@ module.exports = {
   removerCelebracao,
   solicitarConfirmacao,
   atualizarEstadoConfirmacao,
+  listarConfirmacoesPendentesCelebrante,
 };
