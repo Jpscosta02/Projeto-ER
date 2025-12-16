@@ -415,7 +415,25 @@
                                     </form>
                                 </div>
                             </div>
+                        
+                        <!-- Modal Participantes -->
+                        <div id="modal-participantes" class="modal hidden">
+                            <div class="modal-content">
+                                <h2>Participantes da Celebração</h2>
+                                
+                                <div class="participantes-actions">
+                                    <select id="participantes-select-paroquiano">
+                                        <option value="">Selecionar paroquiano...</option>
+                                    </select>
+                                    <button type="button" class="btn-primary" onclick="adicionarParticipante()">Adicionar</button>
+                                </div>
+                                <div id="participantes-lista"></div>
+                                <div class="form-actions">
+                                    <button type="button" onclick="fecharModalParticipantes()" class="btn-primary">Fechar</button>
+                                </div>
+                            </div>
                         </div>
+</div>
                     </div>
                 </div>
             </div> <!-- fim .content-area -->

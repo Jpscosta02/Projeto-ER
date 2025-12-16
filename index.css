@@ -529,6 +529,7 @@ td.text-gray {
     border-radius: 10px;
     transition: border-color 0.2s, box-shadow 0.2s;
     align-items: stretch;
+    cursor: pointer;
 }
 
 .evento-card:hover {
@@ -578,6 +579,50 @@ td.text-gray {
     .evento-tags { flex-direction: column; align-items: flex-start; }
     .evento-acoes-col { align-items: flex-start; }
     .evento-acoes { flex-wrap: wrap; }
+}
+
+/* Modal participantes */
+.participantes-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+#participantes-select-paroquiano {
+    min-width: 240px;
+    height: 32.8px;
+    border-radius: 8px;
+    padding: 3px;
+}
+
+.participante-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.participante-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-start;
+}
+
+.participante-nome {
+    font-weight: 600;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.participante-contacto {
+    color: #6b7280;
+    font-size: 14px;
 }
 
 .confirmacao-panel {
@@ -807,7 +852,7 @@ td.text-gray {
     flex-direction: column;
     background: white;
     padding: 25px;
-    width: 350px;
+    width: 450px;
     border-radius: 8px;
     box-shadow: 0 0 15px rgba(0,0,0,0.2);
     text-align: center;
@@ -835,8 +880,9 @@ td.text-gray {
 
 
 .form-actions {
+
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     gap: 10px;
 }
 

@@ -12,6 +12,11 @@ const {
   atualizarEstadoConfirmacaoCelebrante,
   getConfirmacoesPendentesParaCelebrante,
 } = require('../models/Celebracao');
+const {
+  listarParticipantes,
+  adicionarParticipante,
+  removerParticipante,
+} = require('../models/CelebracaoParticipante');
 
 // GET /api/celebracoes
 async function listarCelebracoes(req, res) {
@@ -188,6 +193,75 @@ async function listarConfirmacoesPendentesCelebrante(req, res) {
   }
 }
 
+// GET /api/celebracoes/:id/participantes
+async function listarParticipantesCelebracao(req, res) {
+  const { id } = req.params;
+  if (!id || Number.isNaN(Number(id))) {
+    return res.status(400).json({ mensagem: 'ID invalido.' });
+  }
+
+  try {
+    const existe = await getCelebracaoPorId(id);
+    if (!existe) {
+      return res.status(404).json({ mensagem: 'Celebracao nao encontrada.' });
+    }
+    const lista = await listarParticipantes(id);
+    return res.json(lista);
+  } catch (err) {
+    console.error('Erro ao listar participantes da celebracao:', err);
+    return res.status(500).json({ mensagem: 'Erro ao listar participantes.' });
+  }
+}
+
+// POST /api/celebracoes/:id/participantes  { paroquianoId }
+async function adicionarParticipanteCelebracao(req, res) {
+  const { id } = req.params;
+  const { paroquianoId } = req.body || {};
+
+  if (!id || Number.isNaN(Number(id)) || !paroquianoId || Number.isNaN(Number(paroquianoId))) {
+    return res.status(400).json({ mensagem: 'IDs invalidos.' });
+  }
+
+  try {
+    const existe = await getCelebracaoPorId(id);
+    if (!existe) return res.status(404).json({ mensagem: 'Celebracao nao encontrada.' });
+
+    const inseriu = await adicionarParticipante(id, paroquianoId);
+    if (!inseriu) {
+      return res.status(409).json({ mensagem: 'Participante ja inscrito.' });
+    }
+
+    return res.status(201).json({ celebracaoId: id, paroquianoId });
+  } catch (err) {
+    console.error('Erro ao adicionar participante:', err);
+    return res.status(500).json({ mensagem: 'Erro ao adicionar participante.' });
+  }
+}
+
+// DELETE /api/celebracoes/:id/participantes/:paroquianoId
+async function removerParticipanteCelebracao(req, res) {
+  const { id, paroquianoId } = req.params;
+
+  if (!id || Number.isNaN(Number(id)) || !paroquianoId || Number.isNaN(Number(paroquianoId))) {
+    return res.status(400).json({ mensagem: 'IDs invalidos.' });
+  }
+
+  try {
+    const existe = await getCelebracaoPorId(id);
+    if (!existe) return res.status(404).json({ mensagem: 'Celebracao nao encontrada.' });
+
+    const apagou = await removerParticipante(id, paroquianoId);
+    if (!apagou) {
+      return res.status(404).json({ mensagem: 'Participante nao encontrado na celebracao.' });
+    }
+
+    return res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao remover participante:', err);
+    return res.status(500).json({ mensagem: 'Erro ao remover participante.' });
+  }
+}
+
 // --------- FUNCOES AUXILIARES PARA NORMALIZAR DATA/HORA ---------
 function normalizarDataValor(valor) {
   if (!valor) return null;
@@ -305,4 +379,7 @@ module.exports = {
   solicitarConfirmacao,
   atualizarEstadoConfirmacao,
   listarConfirmacoesPendentesCelebrante,
+  listarParticipantesCelebracao,
+  adicionarParticipanteCelebracao,
+  removerParticipanteCelebracao,
 };

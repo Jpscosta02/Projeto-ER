@@ -32,6 +32,7 @@ let celebracaoEditarOriginalHora = null;
 let celebracaoEditarOriginalCelebranteId = null;
 let celebracaoEditarEstadoConfirmacao = null;
 let celebracaoEditarIsEspecial = false;
+let modalParticipantesCelebracaoId = null;
 const CELEBRACOES_POR_PAGINA = 3;
 const paginaCelebracoes = {};
 let filtroCelebranteId = "";
@@ -468,22 +469,27 @@ function carregarCelebracoes() {
                         <span>${ev.tipo}</span>
                     </h4>
                     <p>${ev.hora} - ${ev.local || ""}</p>
-                    <span class="evento-tag" >${ev.celebrante_nome || "Celebrante"}</span>
+                    <span class="evento-tag">${ev.celebrante_nome || "Celebrante"}</span>
                 </div>
 
                 <div class="evento-acoes-col">
-                        <div class="evento-tags">
-                            ${badgeEspecial}
-                            ${badgeEstado}
-                        </div>
-                        <div class="evento-acoes">
-                            <button type="button" class="btn-editar" onclick="abrirEditarCelebracao(${ev.id})" title="Editar">Editar &#9998;</button>
-                            ${mostrarRemover ? `<button type="button" class="btn-remover" onclick="removerCelebracao(${ev.id})" title="Remover">Remover &#128465;</button>` : ""}
-                        </div>
+                    <div class="evento-tags">
+                        ${badgeEspecial}
+                        ${badgeEstado}
+                    </div>
+                    <div class="evento-acoes">
+                        <button type="button" class="btn-editar" onclick="abrirEditarCelebracao(${ev.id})" title="Editar">Editar &#9998;</button>
+                        ${mostrarRemover ? `<button type="button" class="btn-remover" onclick="removerCelebracao(${ev.id})" title="Remover">Remover &#128465;</button>` : ""}
+                    </div>
                 </div>
             `;
 
             container.appendChild(div);
+            div.addEventListener('click', (e) => {
+                const tag = e.target.tagName.toLowerCase();
+                const isButton = tag === 'button' || e.target.closest('button');
+                if (!isButton) abrirModalParticipantes(ev.id);
+            });
         });
 
         // Controles de paginação
@@ -590,6 +596,118 @@ function celebranteAtualEspecial() {
     if (!currentUser || !celebrantes || !celebrantes.length) return false;
     const encontrado = celebrantes.find(c => Number(c.id) === Number(currentUser.id));
     return !!(encontrado && encontrado.especial);
+}
+
+// -----------------------------
+// PARTICIPANTES MODAL
+// -----------------------------
+function abrirModalParticipantes(celebracaoId) {
+    modalParticipantesCelebracaoId = celebracaoId;
+    const modal = document.getElementById("modal-participantes");
+    if (modal) modal.classList.remove("hidden");
+    carregarParoquianosSelect();
+    listarParticipantesCelebracao();
+}
+
+function fecharModalParticipantes() {
+    const modal = document.getElementById("modal-participantes");
+    if (modal) modal.classList.add("hidden");
+    modalParticipantesCelebracaoId = null;
+}
+
+async function carregarParoquianosSelect() {
+    // reutiliza dados já carregados em paroquianos
+    const select = document.getElementById("participantes-select-paroquiano");
+    if (!select) return;
+    select.innerHTML = '<option value="">Selecionar paroquiano...</option>';
+    (paroquianos || []).forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.nome || p.contacto || `Paroquiano ${p.id}`;
+        select.appendChild(opt);
+    });
+}
+
+async function listarParticipantesCelebracao() {
+    if (!modalParticipantesCelebracaoId) return;
+    const listaEl = document.getElementById("participantes-lista");
+    if (listaEl) listaEl.innerHTML = "A carregar...";
+    
+
+    try {
+        const resp = await fetch(`${API_URL}/celebracoes/${modalParticipantesCelebracaoId}/participantes`);
+        const body = await resp.json();
+        if (!resp.ok) throw new Error(body?.mensagem || "Erro ao listar participantes");
+
+        const lista = body || [];
+        
+
+        if (!lista.length) {
+            if (listaEl) listaEl.innerHTML = "<p style='padding:8px;color:#6b7280;'>Sem participantes.</p>";
+            return;
+        }
+
+        if (listaEl) {
+            listaEl.innerHTML = lista.map(p => `
+                <div class="participante-item">
+                    <div class="participante-info">
+                        <div class="participante-nome">${p.nome || "Paroquiano"}</div>
+                        <div class="participante-contacto">${p.contacto || ""}</div>
+                    </div>
+                    <button class="btn-secondary" onclick="removerParticipante(${p.paroquiano_id})">Remover</button>
+                </div>
+            `).join("");
+        }
+    } catch (err) {
+        console.error("Erro ao listar participantes:", err);
+        if (listaEl) listaEl.innerHTML = "<p style='padding:8px;color:red;'>Erro ao carregar participantes.</p>";
+    }
+}
+
+async function adicionarParticipante() {
+    if (!modalParticipantesCelebracaoId) return;
+    const select = document.getElementById("participantes-select-paroquiano");
+    const paroquianoId = select ? select.value : "";
+    if (!paroquianoId) {
+        alert("Selecione um paroquiano.");
+        return;
+    }
+
+    try {
+        const resp = await fetch(`${API_URL}/celebracoes/${modalParticipantesCelebracaoId}/participantes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paroquianoId })
+        });
+        const body = await resp.json();
+        if (!resp.ok) {
+            alert((body && body.mensagem) || "Erro ao adicionar participante.");
+            return;
+        }
+        listarParticipantesCelebracao();
+    } catch (err) {
+        console.error("Erro ao adicionar participante:", err);
+        alert("Erro ao adicionar participante.");
+    }
+}
+
+async function removerParticipante(paroquianoId) {
+    if (!modalParticipantesCelebracaoId || !paroquianoId) return;
+    try {
+        const resp = await fetch(`${API_URL}/celebracoes/${modalParticipantesCelebracaoId}/participantes/${paroquianoId}`, {
+            method: "DELETE"
+        });
+        if (!resp.ok) {
+            let body = null;
+            try { body = await resp.json(); } catch {}
+            alert((body && body.mensagem) || "Erro ao remover participante.");
+            return;
+        }
+        listarParticipantesCelebracao();
+    } catch (err) {
+        console.error("Erro ao remover participante:", err);
+        alert("Erro ao remover participante.");
+    }
 }
 
 function preencherSelectCelebrantes(selectId, selectedId = null) {
