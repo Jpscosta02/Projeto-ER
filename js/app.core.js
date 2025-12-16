@@ -3,6 +3,31 @@
 // =============================
 const API_URL = "http://localhost:3001/api";
 
+// Pequeno helper para chamadas REST com JSON e tratamento padrao de erros.
+async function apiFetch(url, options = {}) {
+    const resp = await fetch(url, options);
+    const hasBody = resp.status !== 204;
+    let data = null;
+    if (hasBody) {
+        try {
+            data = await resp.json();
+        } catch {
+            data = null;
+        }
+    }
+
+    if (!resp.ok) {
+        const err = new Error((data && (data.mensagem || data.message)) || "Erro ao comunicar com o servidor.");
+        err.status = resp.status;
+        err.data = data;
+        throw err;
+    }
+
+    return data;
+}
+// Disponibiliza para outros ficheiros js/
+window.apiFetch = apiFetch;
+
 // Estado global
 let paroquianos = [];
 let aniversariantes = [];
@@ -630,17 +655,13 @@ async function carregarParoquianosSelect() {
 
 async function listarParticipantesCelebracao() {
     if (!modalParticipantesCelebracaoId) return;
+    const wrapperEl = document.getElementById("participantes-lista-wrapper");
     const listaEl = document.getElementById("participantes-lista");
     if (listaEl) listaEl.innerHTML = "A carregar...";
-    
+    if (wrapperEl) wrapperEl.classList.remove("participantes-list-wrapper");
 
     try {
-        const resp = await fetch(`${API_URL}/celebracoes/${modalParticipantesCelebracaoId}/participantes`);
-        const body = await resp.json();
-        if (!resp.ok) throw new Error(body?.mensagem || "Erro ao listar participantes");
-
-        const lista = body || [];
-        
+        const lista = await apiFetch(`${API_URL}/celebracoes/${modalParticipantesCelebracaoId}/participantes`);
 
         if (!lista.length) {
             if (listaEl) listaEl.innerHTML = "<p style='padding:8px;color:#6b7280;'>Sem participantes.</p>";
@@ -658,9 +679,15 @@ async function listarParticipantesCelebracao() {
                 </div>
             `).join("");
         }
+
+        if (wrapperEl) {
+            const hasScroll = lista.length >= 6;
+            wrapperEl.classList.toggle("participantes-list-wrapper", hasScroll);
+        }
     } catch (err) {
         console.error("Erro ao listar participantes:", err);
         if (listaEl) listaEl.innerHTML = "<p style='padding:8px;color:red;'>Erro ao carregar participantes.</p>";
+        if (wrapperEl) wrapperEl.classList.remove("participantes-list-wrapper");
     }
 }
 
@@ -674,39 +701,28 @@ async function adicionarParticipante() {
     }
 
     try {
-        const resp = await fetch(`${API_URL}/celebracoes/${modalParticipantesCelebracaoId}/participantes`, {
+        await apiFetch(`${API_URL}/celebracoes/${modalParticipantesCelebracaoId}/participantes`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ paroquianoId })
         });
-        const body = await resp.json();
-        if (!resp.ok) {
-            alert((body && body.mensagem) || "Erro ao adicionar participante.");
-            return;
-        }
         listarParticipantesCelebracao();
     } catch (err) {
         console.error("Erro ao adicionar participante:", err);
-        alert("Erro ao adicionar participante.");
+        alert((err && err.message) || "Erro ao adicionar participante.");
     }
 }
 
 async function removerParticipante(paroquianoId) {
     if (!modalParticipantesCelebracaoId || !paroquianoId) return;
     try {
-        const resp = await fetch(`${API_URL}/celebracoes/${modalParticipantesCelebracaoId}/participantes/${paroquianoId}`, {
+        await apiFetch(`${API_URL}/celebracoes/${modalParticipantesCelebracaoId}/participantes/${paroquianoId}`, {
             method: "DELETE"
         });
-        if (!resp.ok) {
-            let body = null;
-            try { body = await resp.json(); } catch {}
-            alert((body && body.mensagem) || "Erro ao remover participante.");
-            return;
-        }
         listarParticipantesCelebracao();
     } catch (err) {
         console.error("Erro ao remover participante:", err);
-        alert("Erro ao remover participante.");
+        alert((err && err.message) || "Erro ao remover participante.");
     }
 }
 

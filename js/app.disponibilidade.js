@@ -37,14 +37,7 @@ async function verificarDisponibilidadeDataHora() {
         const params = new URLSearchParams({ data, hora });
         if (celebranteId) params.append("celebranteId", celebranteId);
 
-        const resp = await fetch(`${API_URL}/celebracoes/disponibilidade?${params.toString()}`);
-
-        if (!resp.ok) {
-            mostrarDisponibilidade("Nao foi possivel verificar a disponibilidade.", "ocupado");
-            return;
-        }
-
-        const body = await resp.json();
+        const body = await apiFetch(`${API_URL}/celebracoes/disponibilidade?${params.toString()}`);
 
         if (body.disponivel) {
             if (body.celebranteEspecial) {
@@ -76,7 +69,7 @@ async function verificarDisponibilidadeDataHora() {
 
 
 // =============================
-//  CRIAR CELEBRAÇÃO
+//  CRIAR CELEBRACAO
 // =============================
 function mostrarMensagemCelebracoes(msg, tipo = "erro") {
     const box = document.getElementById("celebracoes-mensagens");
@@ -99,27 +92,18 @@ async function criarCelebracao(event) {
     const local = (document.getElementById("nova-celebracao-local") || {}).value;
 
     if (!data || !hora || !tipo || !celebranteId) {
-        mostrarMensagemCelebracoes("Preencha todos os campos obrigatórios.", "erro");
+        mostrarMensagemCelebracoes("Preencha todos os campos obrigatorios.", "erro");
         return;
     }
 
     try {
-        const response = await fetch(`${API_URL}/celebracoes`, {
+        await apiFetch(`${API_URL}/celebracoes`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ data, hora, tipo, celebranteId, local })
         });
 
-        let body = null;
-        try { body = await response.json(); } catch {}
-
-        if (!response.ok) {
-            const msg = (body && body.mensagem) || "Erro ao guardar celebração.";
-            mostrarMensagemCelebracoes(msg, "erro");
-            return;
-        }
-
-        mostrarMensagemCelebracoes("Celebração registada com sucesso!", "sucesso");
+        mostrarMensagemCelebracoes("Celebracao registada com sucesso!", "sucesso");
         adicionarNotificacao(`Celebracao criada: ${formatCelebracaoResumo({ tipo, data, hora, local })}`);
 
         const form = document.getElementById("form-nova-celebracao");
@@ -129,9 +113,8 @@ async function criarCelebracao(event) {
         await buscarCelebracoes();
         await buscarStats();
     } catch (err) {
-        console.error("Erro ao criar celebração:", err);
-        mostrarMensagemCelebracoes("Erro de comunicação com o servidor.", "erro");
+        console.error("Erro ao criar celebracao:", err);
+        mostrarMensagemCelebracoes((err && err.message) || "Erro de comunicacao com o servidor.", "erro");
     }
 }
-
 

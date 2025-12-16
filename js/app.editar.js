@@ -77,15 +77,7 @@ async function verificarDisponibilidadeEditar() {
         const params = new URLSearchParams({ data, hora });
         if (celebranteId) params.append("celebranteId", celebranteId);
 
-        const resp = await fetch(`${API_URL}/celebracoes/disponibilidade?${params.toString()}`);
-
-        if (!resp.ok) {
-            msgBox.textContent = "Nao foi possivel verificar a disponibilidade.";
-            msgBox.style.color = "red";
-            return false;
-        }
-
-        const body = await resp.json();
+        const body = await apiFetch(`${API_URL}/celebracoes/disponibilidade?${params.toString()}`);
         const ehMesmaCelebracao = body.celebracao && Number(body.celebracao.id) === celebracaoEditarId;
 
         if (!body.disponivel && !ehMesmaCelebracao) {
@@ -134,34 +126,25 @@ async function submeterEdicaoCelebracao(event) {
     const msgBox = document.getElementById("editar-disponibilidade-msg");
 
     try {
-        const resp = await fetch(`${API_URL}/celebracoes/${celebracaoEditarId}`, {
+        await apiFetch(`${API_URL}/celebracoes/${celebracaoEditarId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ data, hora, tipo, celebranteId: celebranteEscolhido, local })
         });
-
-        let body = null;
-        try { body = await resp.json(); } catch {}
-
-        if (!resp.ok) {
-            if (resp.status === 409 && msgBox) {
-                msgBox.textContent = (body && body.mensagem) || "Data/hora ja ocupadas por outra celebracao.";
-                msgBox.style.color = "red";
-                return;
-            }
-
-            const msg = (body && body.mensagem) || "Erro ao atualizar celebracao.";
-            alert(msg);
-            return;
-        }
 
         adicionarNotificacao(`Celebracao atualizada: ${formatCelebracaoResumo({ tipo, data, hora, local })}`);
         fecharModalEditar();
         await buscarCelebracoes();
         await buscarStats();
     } catch (err) {
+        if (err.status === 409 && msgBox) {
+            msgBox.textContent = (err.data && err.data.mensagem) || "Data/hora ja ocupadas por outra celebracao.";
+            msgBox.style.color = "red";
+            return;
+        }
+
         console.error("Erro ao atualizar celebracao:", err);
-        alert("Erro de comunicacao com o servidor.");
+        alert((err && err.message) || "Erro de comunicacao com o servidor.");
     }
 }
 
@@ -179,22 +162,11 @@ async function removerCelebracao(id) {
 
     let apagou = false;
     try {
-        const resp = await fetch(`${API_URL}/celebracoes/${id}`, { method: "DELETE" });
-        let body = null;
-        if (resp.status !== 204) {
-            try { body = await resp.json(); } catch {}
-        }
-
-        const sucesso = resp.ok || resp.status === 204;
-        if (!sucesso) {
-            const msg = (body && body.mensagem) || "Erro ao remover celebracao.";
-            alert(msg);
-            return;
-        }
+        await apiFetch(`${API_URL}/celebracoes/${id}`, { method: "DELETE" });
         apagou = true;
     } catch (err) {
         console.error("Erro ao remover celebracao:", err);
-        alert("Erro de comunicacao com o servidor.");
+        alert((err && err.message) || "Erro de comunicacao com o servidor.");
         return;
     }
 
@@ -288,3 +260,4 @@ window.addEventListener("DOMContentLoaded", async () => {
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) logoutBtn.addEventListener("click", logout);
 });
+

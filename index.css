@@ -606,6 +606,10 @@ td.text-gray {
     padding: 8px;
     margin-bottom: 8px;
 }
+.participantes-list-wrapper {
+    max-height: 240px; /* ~6 itens x ~40px */
+    overflow-y: auto;
+}
 
 .participante-info {
     display: flex;
