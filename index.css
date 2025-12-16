@@ -528,7 +528,7 @@ td.text-gray {
     border: 2px solid #e5e7eb;
     border-radius: 10px;
     transition: border-color 0.2s, box-shadow 0.2s;
-    align-items: stretch;
+    align-items: flex-start; /* alinha badges com o título */
     cursor: pointer;
 }
 
@@ -567,10 +567,24 @@ td.text-gray {
 
 .evento-conteudo { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .evento-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.evento-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.evento-tags {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap; /* evita quebrar linha quando há 2 badges (especial + estado) */
+    white-space: nowrap;
+    gap: 6px;
+    min-height: 28px; /* garante altura constante mesmo sem badges */
+}
 .evento-horario { margin: 0; color: #4b5563; }
 .evento-celebrante { display: inline-block; background: #f3f4f6; border: 1px solid #e5e7eb; padding: 4px 10px; border-radius: 6px; font-weight: 600; }
-.evento-acoes-col { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; margin-top: 8px; }
+.evento-acoes-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+    margin-top: 0;
+    justify-content: flex-start; /* badges alinhados ao topo, junto ao título */
+}
 .evento-acoes { display: flex; gap: 8px; }
 
 @media (max-width: 768px) {
@@ -580,6 +594,12 @@ td.text-gray {
     .evento-acoes-col { align-items: flex-start; }
     .evento-acoes { flex-wrap: wrap; }
 }
+
+/* Ajuste de altura para que a coluna de data acompanhe o cartão inteiro */
+.evento-card { align-items: stretch; }
+.evento-date { align-self: stretch; }
+.evento-info,
+.evento-acoes-col { align-self: flex-start; }
 
 /* Modal participantes */
 .participantes-actions {
@@ -687,6 +707,7 @@ td.text-gray {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    height: 100%;
 }
 
 .evento-date .mes {
