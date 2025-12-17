@@ -13,6 +13,7 @@ const sacramentosRoutes = require('./routes/sacramentosRoutes');
 const aniversariantesRoutes = require('./routes/aniversariantesRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const authRoutes = require('./routes/authRoutes');
+const intencoesMissaRoutes = require('./routes/intencoesMissaRoutes');
 
 // ligar as rotas com os paths 
 app.use('/api/paroquianos', paroquianosRoutes);
@@ -22,6 +23,7 @@ app.use('/api/sacramentos', sacramentosRoutes);
 app.use('/api/aniversariantes', aniversariantesRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/intencoes-missa', intencoesMissaRoutes);
 
 const PORT = 3001;
 app.listen(PORT, () => {

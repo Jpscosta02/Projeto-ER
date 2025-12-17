@@ -3,6 +3,7 @@ const {
   getTodasCelebracoes,
   getCelebracaoPorId,
   getCelebracaoPorDataHora,
+  getMissasPorData,
   criarCelebracao,
   updateCelebracao,
   deleteCelebracao,
@@ -12,6 +13,7 @@ const {
   atualizarEstadoConfirmacaoCelebrante,
   getConfirmacoesPendentesParaCelebrante,
 } = require('../models/Celebracao');
+const { listarIntencoesAprovadasPorCelebracao } = require('../models/IntencaoMissa');
 const {
   listarParticipantes,
   adicionarParticipante,
@@ -110,6 +112,46 @@ async function verificarDisponibilidadeCelebracao(req, res) {
   } catch (err) {
     console.error('Erro ao verificar disponibilidade de celebracao:', err);
     return res.status(500).json({ mensagem: 'Erro ao verificar disponibilidade.' });
+  }
+}
+
+// GET /api/celebracoes/missas?data=YYYY-MM-DD
+async function listarMissasPorData(req, res) {
+  const { data } = req.query || {};
+  if (!data) {
+    return res.status(400).json({ mensagem: 'Data obrigatoria.' });
+  }
+
+  try {
+    const lista = await getMissasPorData(String(data).slice(0, 10));
+    return res.json(lista);
+  } catch (err) {
+    console.error('Erro ao listar missas por data:', err);
+    return res.status(500).json({ mensagem: 'Erro ao listar missas.' });
+  }
+}
+
+// GET /api/celebracoes/:id/intencoes
+async function listarIntencoesCelebracao(req, res) {
+  const { id } = req.params;
+  if (!id || Number.isNaN(Number(id))) {
+    return res.status(400).json({ mensagem: 'ID invalido.' });
+  }
+
+  try {
+    const celebracao = await getCelebracaoPorId(Number(id));
+    if (!celebracao) return res.status(404).json({ mensagem: 'Celebracao nao encontrada.' });
+
+    const tipo = String(celebracao.tipo || '').toLowerCase();
+    if (!tipo.includes('missa')) {
+      return res.json([]);
+    }
+
+    const lista = await listarIntencoesAprovadasPorCelebracao(Number(id));
+    return res.json(lista);
+  } catch (err) {
+    console.error('Erro ao listar intencoes da celebracao:', err);
+    return res.status(500).json({ mensagem: 'Erro ao listar intencoes.' });
   }
 }
 
@@ -374,8 +416,10 @@ module.exports = {
   listarCelebracoes,
   criarNovaCelebracao,
   verificarDisponibilidadeCelebracao,
+  listarMissasPorData,
   atualizarCelebracao,
   removerCelebracao,
+  listarIntencoesCelebracao,
   solicitarConfirmacao,
   atualizarEstadoConfirmacao,
   listarConfirmacoesPendentesCelebrante,

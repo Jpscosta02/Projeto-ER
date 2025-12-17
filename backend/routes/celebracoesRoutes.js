@@ -5,6 +5,8 @@ const {
   listarCelebracoes,
   criarNovaCelebracao,
   verificarDisponibilidadeCelebracao,
+  listarMissasPorData,
+  listarIntencoesCelebracao,
   atualizarCelebracao,
   removerCelebracao,
   solicitarConfirmacao,
@@ -20,8 +22,14 @@ router.get('/', listarCelebracoes);
 // NOVO: GET /api/celebracoes/disponibilidade?data=...&hora=...
 router.get('/disponibilidade', verificarDisponibilidadeCelebracao);
 
+// GET /api/celebracoes/missas?data=YYYY-MM-DD
+router.get('/missas', listarMissasPorData);
+
 // POST /api/celebracoes -> cria nova celebração
 router.post('/', criarNovaCelebracao);
+
+// GET /api/celebracoes/:id/intencoes
+router.get('/:id/intencoes', listarIntencoesCelebracao);
 
 router.put("/:id", atualizarCelebracao);
 router.delete("/:id", removerCelebracao);

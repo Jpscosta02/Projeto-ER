@@ -103,20 +103,20 @@ async function validarSessaoBoot() {
 //  VISTAS (DASHBOARD / CELEBRAÇÕES)
 // =============================
 function mostrarVista(vista) {
-    const dashboardView = document.getElementById("dashboard-view");
-    const celebracoesView = document.getElementById("celebracoes-view");
+    const views = {
+        dashboard: document.getElementById("dashboard-view"),
+        celebracoes: document.getElementById("celebracoes-view"),
+        intencoes: document.getElementById("intencoes-view")
+    };
 
-    if (!dashboardView || !celebracoesView) return;
+    Object.values(views).forEach(el => {
+        if (el) el.style.display = "none";
+    });
 
-    if (vista === "celebracoes") {
-        dashboardView.style.display = "none";
-        celebracoesView.style.display = "block";
-        currentView = "celebracoes";
-    } else {
-        dashboardView.style.display = "block";
-        celebracoesView.style.display = "none";
-        currentView = "dashboard";
-    }
+    const alvo = views[vista] || views.dashboard;
+    if (alvo) alvo.style.display = "block";
+
+    currentView = (views[vista] ? vista : "dashboard");
 }
 
 
@@ -152,6 +152,12 @@ function setActiveMenu(element) {
     const items = document.querySelectorAll(".menu-item");
     items.forEach(i => i.classList.remove("active"));
     element.classList.add("active");
+
+    const view = element?.dataset?.view;
+    if (view) {
+        mostrarVista(view);
+        return;
+    }
 
     const labelSpan = element.querySelector("span");
     const label = labelSpan ? labelSpan.textContent.trim().toUpperCase() : "";
@@ -495,6 +501,7 @@ function carregarCelebracoes() {
                     </h4>
                     <p>${ev.hora} - ${ev.local || ""}</p>
                     <span class="evento-tag">${ev.celebrante_nome || "Celebrante"}</span>
+                    <div class="evento-intencoes" data-intencoes="true" style="display:none;"></div>
                 </div>
 
                 <div class="evento-acoes-col">
@@ -510,6 +517,18 @@ function carregarCelebracoes() {
             `;
 
             container.appendChild(div);
+
+            const tipo = String(ev.tipo || "").toLowerCase();
+            if (tipo.includes("missa")) {
+                const box = div.querySelector('[data-intencoes="true"]');
+                if (box) {
+                    box.style.display = "block";
+                    box.textContent = "A carregar intenções...";
+                    box.addEventListener("click", (e) => e.stopPropagation());
+                    carregarIntencoesDaCelebracao(ev.id, box);
+                }
+            }
+
             div.addEventListener('click', (e) => {
                 const tag = e.target.tagName.toLowerCase();
                 const isButton = tag === 'button' || e.target.closest('button');
@@ -564,6 +583,31 @@ function carregarCelebracoes() {
         container.setAttribute("data-base-height", String(alturaFinal));
         container.style.minHeight = `${alturaFinal}px`;
     });
+}
+
+async function carregarIntencoesDaCelebracao(celebracaoId, containerEl) {
+    if (!celebracaoId || !containerEl) return;
+
+    try {
+        const lista = await apiFetch(`${API_URL}/celebracoes/${celebracaoId}/intencoes`);
+        const itens = Array.isArray(lista) ? lista : [];
+
+        if (!itens.length) {
+            containerEl.textContent = "Sem intenções aprovadas.";
+            return;
+        }
+
+        containerEl.innerHTML =
+            `<div class="evento-intencoes-titulo">Intenções</div>` +
+            `<ul class="evento-intencoes-lista">` +
+            itens
+                .map(i => `<li><strong>${i.nome || "Anon"}</strong>: ${i.intencao || ""}</li>`)
+                .join("") +
+            `</ul>`;
+    } catch (err) {
+        console.error("Erro ao carregar intenções da celebração:", err);
+        containerEl.textContent = "Erro ao carregar intenções.";
+    }
 }
 
 // =============================

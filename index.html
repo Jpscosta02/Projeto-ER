@@ -60,7 +60,7 @@
             <!-- Menu -->
             <nav class="menu">
                 <p class="menu-label">MENU</p>
-                <button class="menu-item active" onclick="setActiveMenu(this)">
+                <button class="menu-item active" data-view="dashboard" onclick="setActiveMenu(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
                         <circle cx="9" cy="7" r="4"/>
@@ -76,7 +76,7 @@
                     </svg>
                     <span>PAROQUIANOS</span>
                 </button>
-                <button class="menu-item" onclick="setActiveMenu(this)">
+                <button class="menu-item" data-view="celebracoes" onclick="setActiveMenu(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                         <line x1="16" y1="2" x2="16" y2="6"/>
@@ -84,6 +84,14 @@
                         <line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
                     <span>CELEBRAÇÕES</span>
+                </button>
+                <button class="menu-item" data-view="intencoes" onclick="setActiveMenu(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 21s8-4 8-10V5l-8-3-8 3v6c0 6 8 10 8 10z"/>
+                        <path d="M9 12h6"/>
+                        <path d="M12 9v6"/>
+                    </svg>
+                    <span>INTENÇÕES DE MISSA</span>
                 </button>
                 <button class="menu-item" onclick="setActiveMenu(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -438,6 +446,58 @@
 </div>
                     </div>
                 </div>
+            <div id="intencoes-view" style="display: none;">
+                <div class="tables-grid">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h3>SOLICITAR INTENÇÃO DE MISSA</h3>
+                        </div>
+                        <div class="table-container form-new-celebration">
+                            <form id="form-intencao-missa" onsubmit="submeterIntencaoMissa(event)">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="intencao-nome">Nome *</label>
+                                        <input type="text" id="intencao-nome" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="intencao-data">Data pretendida *</label>
+                                        <input type="date" id="intencao-data" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="intencao-celebracao">Missa *</label>
+                                        <select id="intencao-celebracao" required disabled>
+                                            <option value="">Selecione a data primeiro...</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="intencao-texto">Intenção *</label>
+                                        <textarea id="intencao-texto" rows="4" required placeholder="Ex.: Pela saúde de..., Em memória de..., Ação de graças..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-primary" id="btn-submeter-intencao">Submeter</button>
+                                </div>
+                            </form>
+                            <div id="intencoes-mensagens" class="mensagens-form"></div>
+                        </div>
+                    </div>
+
+                    <div class="table-card" id="intencoes-admin-card" style="display: none;">
+                        <div class="table-header">
+                            <h3>INTENÇÎÇES PENDENTES</h3>
+                        </div>
+                        <div class="table-container">
+                            <div id="intencoes-admin-mensagens" class="mensagens-form"></div>
+                            <div id="intencoes-admin-lista"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             </div> <!-- fim .content-area -->
         </div>
     </div>
@@ -446,5 +506,6 @@
     <script src="js/app.notifications.js"></script>
     <script src="js/app.disponibilidade.js"></script>
     <script src="js/app.editar.js"></script>
+    <script src="js/app.intencoes.js"></script>
 </body>
 </html>

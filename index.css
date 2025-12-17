@@ -585,6 +585,28 @@ td.text-gray {
     margin-top: 0;
     justify-content: flex-start; /* badges alinhados ao topo, junto ao título */
 }
+
+.evento-intencoes {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #e5e7eb;
+    font-size: 0.92rem;
+    color: #374151;
+}
+
+.evento-intencoes-titulo {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #111827;
+}
+
+.evento-intencoes-lista {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
 .evento-acoes { display: flex; gap: 8px; }
 
 @media (max-width: 768px) {
@@ -795,11 +817,75 @@ td.text-gray {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     width: 100%;
     padding: 8px;
     border-radius: 4px;
     border: 1px solid;
+}
+
+.mensagens-form {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+}
+
+.mensagens-form.erro {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.mensagens-form.sucesso {
+    background: #ecfdf5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+.intencao-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.intencao-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.intencao-titulo {
+    font-weight: 600;
+    color: #111827;
+}
+
+.intencao-detalhe {
+    color: #374151;
+    font-size: 0.95rem;
+    white-space: pre-wrap;
+}
+
+.intencao-acoes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 160px;
+}
+
+.intencao-acoes textarea {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    resize: vertical;
 }
 
 .mensagens-disponibilidade {
