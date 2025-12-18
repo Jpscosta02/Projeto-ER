@@ -30,7 +30,6 @@ window.apiFetch = apiFetch;
 
 // Estado global
 let paroquianos = [];
-let aniversariantes = [];
 let celebracoes = [];
 let sacramentos = [];
 let celebrantes = [];
@@ -352,42 +351,6 @@ async function criarParoquiano(event) {
     } catch (err) {
         console.error("Erro ao criar paroquiano:", err);
     }
-}
-
-
-// =============================
-//  ANIVERSARIANTES
-// =============================
-async function buscarAniversariantes() {
-    try {
-        const response = await fetch(`${API_URL}/aniversariantes`);
-        if (response.ok) {
-            aniversariantes = await response.json();
-            carregarAniversariantes();
-        }
-    } catch (err) {
-        console.error("Erro ao buscar aniversariantes:", err);
-    }
-}
-
-function carregarAniversariantes() {
-    const tbody = document.getElementById("table-aniversariantes");
-    if (!tbody) return;
-
-    tbody.innerHTML = "";
-
-    aniversariantes.forEach(a => {
-        const dataStr = a.data_nascimento
-            ? new Date(a.data_nascimento).toLocaleDateString("pt-PT")
-            : "";
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${dataStr}</td>
-            <td>${a.nome}</td>
-            <td>${a.idade || "—"}</td>
-        `;
-        tbody.appendChild(tr);
-    });
 }
 
 
