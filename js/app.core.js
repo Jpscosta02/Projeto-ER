@@ -102,6 +102,28 @@ async function validarSessaoBoot() {
 // =============================
 //  VISTAS (DASHBOARD / CELEBRAÇÕES)
 // =============================
+function atualizarTopBar(vista) {
+    const titleEl =
+        document.getElementById("page-title") ||
+        document.querySelector(".top-bar h2");
+    const breadcrumbEl =
+        document.getElementById("page-breadcrumb") ||
+        document.querySelector(".top-bar p");
+
+    if (!titleEl || !breadcrumbEl) return;
+
+    const labels = {
+        dashboard: { title: "Visão Geral", breadcrumb: "Painel / Visão Geral" },
+        celebracoes: { title: "Celebrações", breadcrumb: "Painel / Celebrações" },
+        intencoes: { title: "Intenções de Missa", breadcrumb: "Painel / Intenções de Missa" },
+        documentos: { title: "Documentos", breadcrumb: "Painel / Documentos" }
+    };
+
+    const alvo = labels[vista] || labels.dashboard;
+    titleEl.textContent = alvo.title;
+    breadcrumbEl.textContent = alvo.breadcrumb;
+}
+
 function mostrarVista(vista) {
     const views = {
         dashboard: document.getElementById("dashboard-view"),
@@ -118,6 +140,10 @@ function mostrarVista(vista) {
     if (alvo) alvo.style.display = "block";
 
     currentView = (views[vista] ? vista : "dashboard");
+    atualizarTopBar(currentView);
+    try {
+        window.dispatchEvent(new CustomEvent("sige:view", { detail: { view: currentView } }));
+    } catch {}
 }
 
 

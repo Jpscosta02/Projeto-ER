@@ -120,8 +120,8 @@
             <!-- Top Bar -->
             <div class="top-bar">
                 <div>
-                    <h2>Visão Geral</h2>
-                    <p>Painel / Visão Geral</p>
+                    <h2 id="page-title">Visão Geral</h2>
+                    <p id="page-breadcrumb">Painel / Visão Geral</p>
                 </div>
                 <div class="top-actions">
                     <button class="notif-button" id="notif-toggle" type="button" aria-label="Notificações">
@@ -456,7 +456,7 @@
 
             <div id="documentos-view" style="display: none;">
                 <div class="tables-grid">
-                    <div class="table-card">
+                    <div class="table-card" id="docs-filtro-card">
                         <div class="table-header">
                             <h3>DOCUMENTOS</h3>
                         </div>
@@ -483,7 +483,7 @@
                         </div>
                     </div>
 
-                    <div class="table-card" id="docs-preview-card" style="display: none;">
+                    <div class="table-card docs-preview-card" id="docs-preview-card" style="display: none;">
                         <div class="table-header">
                             <h3>PARTICIPANTES</h3>
                         </div>

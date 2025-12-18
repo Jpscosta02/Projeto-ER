@@ -361,6 +361,35 @@ body {
     overflow-y: auto;
     min-height: 0;
     padding: 24px;
+    max-height: 99999px;
+    transition: max-height 0.35s ease;
+}
+
+.content-area.docs-content-600 {
+    max-height: 600px;
+}
+
+#documentos-view:not(.docs-has-preview) #docs-filtro-card {
+    width: 100%;
+    max-width: 600px;
+    justify-self: center;
+}
+
+.docs-preview-card {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: max-height 0.35s ease, opacity 0.2s ease, transform 0.35s ease;
+    pointer-events: none;
+    will-change: max-height, opacity, transform;
+}
+
+.docs-preview-card.is-open {
+    max-height: 700px;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
 /* Stats Grid */

@@ -110,27 +110,82 @@
         return bom + linhas.join("\r\n");
     }
 
+    function setContentArea600(ativo) {
+        const contentArea = document.querySelector(".content-area");
+        if (!contentArea) return;
+        contentArea.classList.toggle("docs-content-600", !!ativo);
+    }
+
+    function setDocsHasPreview(ativo) {
+        const view = el("documentos-view");
+        if (!view) return;
+        view.classList.toggle("docs-has-preview", !!ativo);
+    }
+
+    let docsPreviewAnimToken = 0;
+
+    function fecharPreviewCard(imediato = false) {
+        const card = el("docs-preview-card");
+        const container = el("docs-participantes-preview");
+        if (!card) return;
+
+        const token = ++docsPreviewAnimToken;
+        card.classList.remove("is-open");
+        card.style.display = "block";
+
+        if (container) container.innerHTML = "";
+
+        if (imediato) {
+            card.style.display = "none";
+            return;
+        }
+
+        setTimeout(() => {
+            if (token !== docsPreviewAnimToken) return;
+            card.style.display = "none";
+        }, 380);
+    }
+
+    function abrirPreviewCard() {
+        const card = el("docs-preview-card");
+        if (!card) return;
+
+        const token = ++docsPreviewAnimToken;
+        card.style.display = "block";
+        card.classList.remove("is-open");
+
+        requestAnimationFrame(() => {
+            if (token !== docsPreviewAnimToken) return;
+            card.classList.add("is-open");
+        });
+    }
+
     async function atualizarPreview(celebracaoId) {
         const card = el("docs-preview-card");
         const container = el("docs-participantes-preview");
         if (!card || !container) return;
 
         if (!celebracaoId) {
-            card.style.display = "none";
-            container.innerHTML = "";
+            fecharPreviewCard(true);
+            setContentArea600(false);
+            setDocsHasPreview(false);
             return;
         }
 
         try {
-            container.innerHTML = "<p style='padding:12px;color:#6b7280;'>A carregar...</p>";
-            card.style.display = "block";
+            fecharPreviewCard(true);
+
             const lista = await obterParticipantes(celebracaoId);
             const participantes = Array.isArray(lista) ? lista : [];
             if (!participantes.length) {
-                card.style.display = "none";
-                container.innerHTML = "";
+                fecharPreviewCard(true);
+                setContentArea600(false);
+                setDocsHasPreview(false);
                 return;
             }
+
+            setContentArea600(true);
+            setDocsHasPreview(true);
 
             const itens = participantes
                 .slice(0, 12)
@@ -143,9 +198,12 @@
                 <ul style="padding:10px 28px; margin:0; display:flex; flex-direction:column; gap:4px;">${itens}</ul>
                 ${mais}
             `;
+
+            abrirPreviewCard();
         } catch (err) {
-            card.style.display = "none";
-            container.innerHTML = "";
+            fecharPreviewCard(true);
+            setContentArea600(false);
+            setDocsHasPreview(false);
         }
     }
 
@@ -338,6 +396,15 @@
         atualizarEstadoBotoes();
         if (typeof window.atualizarDocumentosCelebracoes === "function") {
             window.atualizarDocumentosCelebracoes();
+        }
+    });
+
+    window.addEventListener("sige:view", (event) => {
+        const view = event?.detail?.view;
+        if (view !== "documentos") {
+            setContentArea600(false);
+            setDocsHasPreview(false);
+            fecharPreviewCard(true);
         }
     });
 })();
