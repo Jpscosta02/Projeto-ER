@@ -16,13 +16,13 @@ function mostrarMensagemIntencoes(msg, tipo = "erro") {
 async function submeterIntencaoMissa(event) {
     event.preventDefault();
 
-    const nome = (document.getElementById("intencao-nome") || {}).value?.trim();
+    const nome = (currentUser?.nome || currentUser?.email || "").trim();
     const dataPretendida = (document.getElementById("intencao-data") || {}).value;
     const intencao = (document.getElementById("intencao-texto") || {}).value?.trim();
     const solicitanteEmail = currentUser?.email || null;
     const celebracaoId = (document.getElementById("intencao-celebracao") || {}).value;
 
-    if (!nome || !intencao || !dataPretendida) {
+    if (!nome || !intencao) {
         mostrarMensagemIntencoes("Preencha todos os campos obrigatórios.", "erro");
         return;
     }
@@ -36,7 +36,7 @@ async function submeterIntencaoMissa(event) {
         await apiFetch(`${API_URL}/intencoes-missa`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nome, intencao, dataPretendida, solicitanteEmail, celebracaoId })
+            body: JSON.stringify({ nome, intencao, solicitanteEmail, celebracaoId })
         });
 
         mostrarMensagemIntencoes("Intenção submetida com sucesso (pendente de validação).", "sucesso");
@@ -93,12 +93,13 @@ function preencherSelectMissas(selectEl, missas = []) {
     selectEl.appendChild(optPlaceholder);
 
     missas.forEach(m => {
+        const data = formatarDataIso(m.data);
         const hora = (m.hora || "").slice(0, 5);
         const local = m.local || "local nao definido";
         const celebrante = m.celebrante_nome ? ` - ${m.celebrante_nome}` : "";
         const opt = document.createElement("option");
         opt.value = m.id;
-        opt.textContent = `${hora} - ${local}${celebrante}`;
+        opt.textContent = `${data} ${hora} - ${local}${celebrante}`;
         selectEl.appendChild(opt);
     });
 
@@ -108,43 +109,40 @@ function preencherSelectMissas(selectEl, missas = []) {
 }
 
 async function carregarMissasParaDataPretendida() {
-    const dataEl = document.getElementById("intencao-data");
     const selectEl = document.getElementById("intencao-celebracao");
-    if (!dataEl || !selectEl) return;
-
-    const data = dataEl.value;
-    if (!data) {
-        selectEl.disabled = true;
-        selectEl.innerHTML = '<option value="">Selecione a data primeiro...</option>';
-        const btn = document.getElementById("btn-submeter-intencao");
-        if (btn) btn.disabled = true;
-        return;
-    }
+    const dataEl = document.getElementById("intencao-data");
+    if (!selectEl) return;
 
     try {
-        const missas = await apiFetch(`${API_URL}/celebracoes/missas?data=${encodeURIComponent(data)}`);
+        const missas = await apiFetch(`${API_URL}/celebracoes/missas-disponiveis`);
         const lista = Array.isArray(missas) ? missas : [];
 
         preencherSelectMissas(selectEl, lista);
 
         if (!lista.length) {
-            definirEstadoDisponibilidadeMissas({ ok: false, mensagem: "Nao ha missa agendada para a data selecionada." });
+            definirEstadoDisponibilidadeMissas({ ok: false, mensagem: "Nao ha missas disponiveis." });
             selectEl.disabled = true;
-            return;
-        }
-
-        if (lista.length === 1) {
-            definirEstadoDisponibilidadeMissas({ ok: true, mensagem: "Missa encontrada para a data selecionada." });
-            selectEl.disabled = true;
+            if (dataEl) dataEl.value = "";
             return;
         }
 
         definirEstadoDisponibilidadeMissas({ ok: true, mensagem: "Selecione a missa pretendida." });
         selectEl.disabled = false;
+
+        const syncData = () => {
+            if (!dataEl) return;
+            const id = Number(selectEl.value);
+            const missa = lista.find(m => Number(m.id) === id);
+            dataEl.value = missa ? formatarDataIso(missa.data) : "";
+        };
+
+        selectEl.onchange = syncData;
+        syncData();
     } catch (err) {
         console.error("Erro ao carregar missas:", err);
-        definirEstadoDisponibilidadeMissas({ ok: false, mensagem: (err && err.message) || "Erro ao verificar missas." });
+        definirEstadoDisponibilidadeMissas({ ok: false, mensagem: (err && err.message) || "Erro ao carregar missas." });
         selectEl.disabled = true;
+        if (dataEl) dataEl.value = "";
     }
 }
 
@@ -253,10 +251,9 @@ async function verificarDecisoesENotificarSolicitante() {
 window.addEventListener("DOMContentLoaded", () => {
     const nomeEl = document.getElementById("intencao-nome");
     if (!nomeEl) return;
-    if (nomeEl.value) return;
-    if (typeof currentUser === "object" && currentUser) {
-        nomeEl.value = currentUser.nome || currentUser.email || "";
-    }
+    const nome = (currentUser?.nome || currentUser?.email || "").trim();
+    nomeEl.value = nome;
+    nomeEl.readOnly = true;
 });
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -265,10 +262,5 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("DOMContentLoaded", () => {
-    const dataEl = document.getElementById("intencao-data");
-    if (!dataEl) return;
-
-    dataEl.addEventListener("change", carregarMissasParaDataPretendida);
-    dataEl.addEventListener("input", carregarMissasParaDataPretendida);
     carregarMissasParaDataPretendida();
 });

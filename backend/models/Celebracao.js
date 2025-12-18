@@ -195,6 +195,20 @@ async function getMissasPorData(data, db) {
   return result.rows;
 }
 
+async function getMissasDisponiveis(db) {
+  const client = getDb(db);
+  const result = await client.query(
+    `SELECT c.*,
+            ce.nome AS celebrante_nome
+       FROM celebracoes c
+  LEFT JOIN celebrantes ce ON c.celebrante_id = ce.id
+      WHERE c.data >= CURRENT_DATE
+        AND LOWER(c.tipo) LIKE '%missa%'
+   ORDER BY c.data ASC, c.hora ASC, c.id ASC`
+  );
+  return result.rows;
+}
+
 // CRIAR NOVA CELEBRACAO
 async function criarCelebracao({ data, hora, tipo, local, celebranteId }) {
   if (!data || !hora || !tipo || !celebranteId) {
@@ -363,4 +377,5 @@ module.exports = {
   atualizarEstadoConfirmacaoCelebrante,
   getConfirmacoesPendentesParaCelebrante,
   getMissasPorData,
+  getMissasDisponiveis,
 };

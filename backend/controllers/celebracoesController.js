@@ -4,6 +4,7 @@ const {
   getCelebracaoPorId,
   getCelebracaoPorDataHora,
   getMissasPorData,
+  getMissasDisponiveis,
   criarCelebracao,
   updateCelebracao,
   deleteCelebracao,
@@ -128,6 +129,17 @@ async function listarMissasPorData(req, res) {
   } catch (err) {
     console.error('Erro ao listar missas por data:', err);
     return res.status(500).json({ mensagem: 'Erro ao listar missas.' });
+  }
+}
+
+// GET /api/celebracoes/missas-disponiveis
+async function listarMissasDisponiveis(req, res) {
+  try {
+    const lista = await getMissasDisponiveis();
+    return res.json(lista);
+  } catch (err) {
+    console.error('Erro ao listar missas disponiveis:', err);
+    return res.status(500).json({ mensagem: 'Erro ao listar missas disponiveis.' });
   }
 }
 
@@ -417,6 +429,7 @@ module.exports = {
   criarNovaCelebracao,
   verificarDisponibilidadeCelebracao,
   listarMissasPorData,
+  listarMissasDisponiveis,
   atualizarCelebracao,
   removerCelebracao,
   listarIntencoesCelebracao,
