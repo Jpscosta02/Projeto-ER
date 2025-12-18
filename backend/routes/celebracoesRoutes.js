@@ -6,6 +6,7 @@ const {
   criarNovaCelebracao,
   verificarDisponibilidadeCelebracao,
   listarMissasPorData,
+  listarMissasDisponiveis,
   listarIntencoesCelebracao,
   atualizarCelebracao,
   removerCelebracao,
@@ -24,6 +25,9 @@ router.get('/disponibilidade', verificarDisponibilidadeCelebracao);
 
 // GET /api/celebracoes/missas?data=YYYY-MM-DD
 router.get('/missas', listarMissasPorData);
+
+// GET /api/celebracoes/missas-disponiveis
+router.get('/missas-disponiveis', listarMissasDisponiveis);
 
 // POST /api/celebracoes -> cria nova celebração
 router.post('/', criarNovaCelebracao);

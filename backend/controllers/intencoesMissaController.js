@@ -7,51 +7,47 @@ const {
   listarDecisoesNaoNotificadasPorEmail,
   marcarIntencaoNotificada,
 } = require('../models/IntencaoMissa');
-const { getMissasPorData, getCelebracaoPorId } = require('../models/Celebracao');
+const { getCelebracaoPorId } = require('../models/Celebracao');
 
 async function submeterIntencaoMissa(req, res) {
   const { nome, intencao, dataPretendida, solicitanteEmail, celebracaoId } = req.body || {};
 
-  if (!nome || !intencao || !dataPretendida) {
+  if (!nome || !intencao) {
     return res.status(400).json({
-      mensagem: 'Nome, intencao e data pretendida sao obrigatorios.',
+      mensagem: 'Nome e intencao sao obrigatorios.',
     });
   }
 
   try {
-    const dataNorm = String(dataPretendida).slice(0, 10);
-    const missas = await getMissasPorData(dataNorm);
-
-    if (!missas || missas.length === 0) {
-      return res.status(400).json({
-        mensagem: 'Nao ha missa agendada para a data pretendida.',
-      });
-    }
-
     let celebracaoIdFinal = celebracaoId ? Number(celebracaoId) : null;
 
     if (celebracaoIdFinal && Number.isNaN(celebracaoIdFinal)) {
       return res.status(400).json({ mensagem: 'Celebracao invalida.' });
     }
 
-    if (!celebracaoIdFinal && missas.length === 1) {
-      celebracaoIdFinal = Number(missas[0].id);
+    if (!celebracaoIdFinal) {
+      return res.status(400).json({ mensagem: 'Selecione uma missa.' });
     }
 
-    if (!celebracaoIdFinal && missas.length > 1) {
-      return res.status(400).json({
-        mensagem: 'Ha varias missas nesta data; selecione uma.',
-        missas,
-      });
+    const celebracao = await getCelebracaoPorId(celebracaoIdFinal);
+    if (!celebracao) {
+      return res.status(400).json({ mensagem: 'Missa nao encontrada.' });
     }
 
-    if (celebracaoIdFinal) {
-      const pertence = missas.some(m => Number(m.id) === celebracaoIdFinal);
-      if (!pertence) {
-        return res.status(400).json({
-          mensagem: 'A celebracao selecionada nao corresponde a uma missa nesta data.',
-        });
-      }
+    const tipo = String(celebracao.tipo || '').toLowerCase();
+    if (!tipo.includes('missa')) {
+      return res.status(400).json({ mensagem: 'A celebracao selecionada nao e uma missa.' });
+    }
+
+    const dataCelebracao = celebracao.data ? String(celebracao.data).slice(0, 10) : null;
+    const dataNorm = dataPretendida ? String(dataPretendida).slice(0, 10) : dataCelebracao;
+
+    if (!dataNorm) {
+      return res.status(400).json({ mensagem: 'Nao foi possivel determinar a data pretendida.' });
+    }
+
+    if (dataCelebracao && dataNorm && dataCelebracao !== dataNorm) {
+      return res.status(400).json({ mensagem: 'A missa selecionada nao corresponde a data pretendida.' });
     }
 
     const nova = await criarIntencaoMissa({
