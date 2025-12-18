@@ -8,22 +8,32 @@ async function apiFetch(url, options = {}) {
     const resp = await fetch(url, options);
     const hasBody = resp.status !== 204;
     let data = null;
+    let rawText = null;
+
     if (hasBody) {
         try {
-            data = await resp.json();
+            rawText = await resp.text();
+            try {
+                data = rawText ? JSON.parse(rawText) : null;
+            } catch {
+                data = null;
+            }
         } catch {
             data = null;
         }
     }
 
     if (!resp.ok) {
-        const err = new Error((data && (data.mensagem || data.message)) || "Erro ao comunicar com o servidor.");
+        const serverMsg = (data && (data.mensagem || data.message)) || rawText;
+        const err = new Error(serverMsg || "Erro ao comunicar com o servidor.");
         err.status = resp.status;
         err.data = data;
+        err.raw = rawText;
         throw err;
     }
 
-    return data;
+    // Prefer parsed JSON; fall back to rawText or null for 204
+    return data ?? rawText ?? null;
 }
 // Disponibiliza para outros ficheiros js/
 window.apiFetch = apiFetch;
@@ -114,6 +124,7 @@ function atualizarTopBar(vista) {
     const labels = {
         dashboard: { title: "Visão Geral", breadcrumb: "Painel / Visão Geral" },
         celebracoes: { title: "Celebrações", breadcrumb: "Painel / Celebrações" },
+        sacramentos: { title: "Sacramentos", breadcrumb: "Painel / Sacramentos" },
         intencoes: { title: "Intenções de Missa", breadcrumb: "Painel / Intenções de Missa" },
         documentos: { title: "Documentos", breadcrumb: "Painel / Documentos" }
     };
@@ -127,6 +138,7 @@ function mostrarVista(vista) {
     const views = {
         dashboard: document.getElementById("dashboard-view"),
         celebracoes: document.getElementById("celebracoes-view"),
+        sacramentos: document.getElementById("sacramentos-view"),
         intencoes: document.getElementById("intencoes-view"),
         documentos: document.getElementById("documentos-view")
     };
@@ -221,6 +233,8 @@ function setActiveMenu(element) {
 
     if (label === "CELEBRAÇÕES") {
         mostrarVista("celebracoes");
+    } else if (label === "SACRAMENTOS") {
+        mostrarVista("sacramentos");
     } else {
         mostrarVista("dashboard");
     }
@@ -655,6 +669,14 @@ async function carregarIntencoesDaCelebracao(celebracaoId, containerEl) {
 // =============================
 //  SACRAMENTOS
 // =============================
+// =============================
+//  SACRAMENTOS (listagem/gestão)
+// =============================
+const SACRAMENTOS_POR_PAGINA = 3;
+const paginaSacramentos = {};
+let filtroSacramentoCelebranteId = "";
+let filtroSacramentoTipo = "";
+
 async function buscarSacramentos() {
     try {
         const response = await fetch(`${API_URL}/sacramentos`);
@@ -667,23 +689,262 @@ async function buscarSacramentos() {
     }
 }
 
-function carregarSacramentos() {
-    const tbody = document.getElementById("table-sacramentos");
-    if (!tbody) return;
+function toggleFiltroSacramentos(event) {
+    const menu = document.getElementById("filtro-sacramentos-menu");
+    if (!menu) return;
+    event.stopPropagation();
+    const isHidden = menu.classList.contains("hidden");
+    if (isHidden) {
+        menu.classList.remove("hidden");
+        document.addEventListener("click", fecharFiltroSacramentosAoClicarFora);
+    } else {
+        fecharFiltroSacramentos();
+    }
+}
 
-    tbody.innerHTML = "";
+function fecharFiltroSacramentos() {
+    const menu = document.getElementById("filtro-sacramentos-menu");
+    if (menu) menu.classList.add("hidden");
+    document.removeEventListener("click", fecharFiltroSacramentosAoClicarFora);
+}
 
-    sacramentos.forEach(s => {
-        const dataStr = s.data ? new Date(s.data).toLocaleDateString("pt-PT") : "";
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${s.nome_paroquiano}</td>
-            <td>${s.tipo}</td>
-            <td>${dataStr}</td>
-            <td>${s.local || ""}</td>
-        `;
-        tbody.appendChild(tr);
+function fecharFiltroSacramentosAoClicarFora(event) {
+    const menu = document.getElementById("filtro-sacramentos-menu");
+    const toggle = document.querySelector(".filter-toggle");
+    if (!menu) return;
+    if (!menu.contains(event.target) && (!toggle || !toggle.contains(event.target))) {
+        fecharFiltroSacramentos();
+    }
+}
+
+function aplicarFiltroSacramentos() {
+    const selectCelebrante = document.getElementById("filtro-sacramente-celebrante");
+    const inputTipo = document.getElementById("filtro-sacramento-tipo");
+    filtroSacramentoCelebranteId = selectCelebrante ? selectCelebrante.value : "";
+    filtroSacramentoTipo = inputTipo ? inputTipo.value.trim().toLowerCase() : "";
+    carregarSacramentos();
+    fecharFiltroSacramentos();
+}
+
+function limparFiltroSacramentos() {
+    const selectCelebrante = document.getElementById("filtro-sacramente-celebrante");
+    const inputTipo = document.getElementById("filtro-sacramento-tipo");
+    filtroSacramentoCelebranteId = "";
+    filtroSacramentoTipo = "";
+    if (selectCelebrante) selectCelebrante.value = "";
+    if (inputTipo) inputTipo.value = "";
+    carregarSacramentos();
+}
+
+function filtrarSacramentos(lista) {
+    return lista.filter(ev => {
+        const celebranteId = ev.celebrante_id ?? ev.celebranteId;
+        if (filtroSacramentoCelebranteId && String(celebranteId) !== String(filtroSacramentoCelebranteId)) {
+            return false;
+        }
+        if (filtroSacramentoTipo) {
+            const tipo = (ev.tipo || "").toLowerCase();
+            if (!tipo.includes(filtroSacramentoTipo)) return false;
+        }
+        return true;
     });
+}
+
+function obterPaginaAtualSacramentos(containerId, totalPaginas) {
+    if (!(containerId in paginaSacramentos)) paginaSacramentos[containerId] = 0;
+    const pagina = Math.max(0, Math.min(paginaSacramentos[containerId], Math.max(totalPaginas - 1, 0)));
+    paginaSacramentos[containerId] = pagina;
+    return pagina;
+}
+
+function mudarPaginaSacramentos(containerId, novaPagina) {
+    paginaSacramentos[containerId] = Math.max(0, novaPagina);
+    carregarSacramentos();
+}
+
+function carregarSacramentos() {
+    const container = document.getElementById("sacramentos-container-gerir");
+    if (!container) return;
+    container.innerHTML = "";
+    const lista = filtrarSacramentos(sacramentos || []);
+    if (!lista || lista.length === 0) {
+        const temFiltros = filtroSacramentoCelebranteId || filtroSacramentoTipo;
+        const mensagem = temFiltros ? "Nenhum sacramento encontrado para os filtros selecionados." : "Sem sacramentos agendados";
+        container.innerHTML = `<p style="padding: 16px; text-align:center; color:#777;">${mensagem}</p>`;
+        return;
+    }
+    const totalPaginas = Math.ceil(lista.length / SACRAMENTOS_POR_PAGINA);
+    const paginaAtual = obterPaginaAtualSacramentos(container.id, totalPaginas);
+    const inicio = paginaAtual * SACRAMENTOS_POR_PAGINA;
+    const listaPagina = lista.slice(inicio, inicio + SACRAMENTOS_POR_PAGINA);
+
+    listaPagina.forEach(ev => {
+        const dataObj = ev.data ? new Date(ev.data) : null;
+        let dia = "";
+        let mes = "";
+        if (dataObj && !isNaN(dataObj)) {
+            dia = String(dataObj.getDate()).padStart(2, "0");
+            mes = dataObj.toLocaleString("pt-PT", { month: "short" }).toUpperCase();
+        } else if (ev.data && /^\d{4}-\d{2}-\d{2}$/.test(ev.data)) {
+            const [y, m, d] = ev.data.split("-");
+            dia = d;
+            const dateTmp = new Date(Number(y), Number(m) - 1, Number(d));
+            mes = dateTmp.toLocaleString("pt-PT", { month: "short" }).toUpperCase();
+        }
+
+        const div = document.createElement("div");
+        div.className = "evento-card";
+        const editarOnclick = `abrirEditarSacramento(${ev.id})`;
+        div.innerHTML = `
+            <div class="evento-date">
+                <div class="mes">${mes}</div>
+                <div class="dia">${dia}</div>
+            </div>
+            <div class="evento-info">
+                <h4 class="evento-titulo"><span>${ev.tipo}</span></h4>
+                <p>${ev.hora} - ${ev.local || ""}</p>
+                <span class="evento-tag">${ev.celebrante_nome || "Celebrante"}</span>
+            </div>
+            <div class="evento-acoes-col">
+                <div class="evento-acoes">
+                    <button type="button" class="btn-editar" onclick="${editarOnclick}" title="Editar">Editar &#9998;</button>
+                    ${isAdmin ? `<button type="button" class="btn-remover" onclick="removerSacramento(${ev.id})" title="Remover">Remover &#128465;</button>` : ""}
+                </div>
+            </div>
+        `;
+
+        container.appendChild(div);
+        div.addEventListener('click', (e) => {
+            const isButton = e.target.tagName.toLowerCase() === 'button' || e.target.closest('button');
+            if (!isButton) abrirModalParticipantesSacramento(ev.id);
+        });
+    });
+
+    container.querySelectorAll(".eventos-nav-btn").forEach(btn => btn.remove());
+    if (totalPaginas > 1) {
+        if (paginaAtual > 0) {
+            const btnPrev = document.createElement("button");
+            btnPrev.className = "eventos-nav-btn nav-prev";
+            btnPrev.innerHTML = `
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`;
+            btnPrev.onclick = (e) => { e.stopPropagation(); mudarPaginaSacramentos(container.id, paginaAtual - 1); };
+            container.appendChild(btnPrev);
+        }
+        if (paginaAtual < totalPaginas - 1) {
+            const btnNext = document.createElement("button");
+            btnNext.className = "eventos-nav-btn nav-next";
+            btnNext.innerHTML = `
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`;
+            btnNext.onclick = (e) => { e.stopPropagation(); mudarPaginaSacramentos(container.id, paginaAtual + 1); };
+            container.appendChild(btnNext);
+        }
+    }
+
+    const baseHeightAttr = container.getAttribute("data-base-height");
+    const baseHeight = baseHeightAttr ? Number(baseHeightAttr) : 0;
+    const currentHeight = container.scrollHeight;
+    const alturaFinal = Math.max(baseHeight || 240, currentHeight);
+    container.setAttribute("data-base-height", String(alturaFinal));
+    container.style.minHeight = `${alturaFinal}px`;
+}
+
+// -----------------------------
+// Participantes do Sacramento
+// -----------------------------
+let modalParticipantesSacramentoId = null;
+
+function abrirModalParticipantesSacramento(sacramentoId) {
+    modalParticipantesSacramentoId = sacramentoId;
+    const modal = document.getElementById("modal-participantes-sacramento");
+    if (modal) modal.classList.remove("hidden");
+    carregarParoquianosSelectSacramento();
+    listarParticipantesSacramento();
+}
+
+function fecharModalParticipantesSacramento() {
+    const modal = document.getElementById("modal-participantes-sacramento");
+    if (modal) modal.classList.add("hidden");
+    modalParticipantesSacramentoId = null;
+}
+
+function carregarParoquianosSelectSacramento() {
+    const select = document.getElementById("participantes-sacramento-select-paroquiano");
+    if (!select) return;
+    select.innerHTML = '<option value="">Selecionar paroquiano...</option>';
+    (paroquianos || []).forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.nome || p.contacto || `Paroquiano ${p.id}`;
+        select.appendChild(opt);
+    });
+}
+
+async function listarParticipantesSacramento() {
+    if (!modalParticipantesSacramentoId) return;
+    const wrapperEl = document.getElementById("participantes-sacramento-lista-wrapper");
+    const listaEl = document.getElementById("participantes-sacramento-lista");
+    if (listaEl) listaEl.innerHTML = "A carregar...";
+    if (wrapperEl) wrapperEl.classList.remove("participantes-list-wrapper");
+    try {
+        const lista = await apiFetch(`${API_URL}/sacramentos/${modalParticipantesSacramentoId}/participantes`);
+        if (!lista.length) {
+            if (listaEl) listaEl.innerHTML = "<p style='padding:8px;color:#6b7280;'>Sem participantes.</p>";
+            return;
+        }
+        if (listaEl) {
+            listaEl.innerHTML = lista.map(p => `
+                <div class=\"participante-item\">
+                    <div class=\"participante-info\">
+                        <div class=\"participante-nome\">${p.nome || "Paroquiano"}</div>
+                        <div class=\"participante-contacto\">${p.contacto || ""}</div>
+                    </div>
+                    <button class=\"btn-secondary\" onclick=\"removerParticipanteSacramento(${p.paroquiano_id})\">Remover</button>
+                </div>`).join("");
+        }
+        if (wrapperEl) {
+            const hasScroll = lista.length >= 6;
+            wrapperEl.classList.toggle("participantes-list-wrapper", hasScroll);
+        }
+    } catch (err) {
+        console.error("Erro ao listar participantes do sacramento:", err);
+        if (listaEl) listaEl.innerHTML = "<p style='padding:8px;color:red;'>Erro ao carregar participantes.</p>";
+        if (wrapperEl) wrapperEl.classList.remove("participantes-list-wrapper");
+    }
+}
+
+async function adicionarParticipanteSacramento() {
+    if (!modalParticipantesSacramentoId) return;
+    const select = document.getElementById("participantes-sacramento-select-paroquiano");
+    const paroquianoId = select ? select.value : "";
+    if (!paroquianoId) { alert("Selecione um paroquiano."); return; }
+    try {
+        await apiFetch(`${API_URL}/sacramentos/${modalParticipantesSacramentoId}/participantes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paroquianoId })
+        });
+        listarParticipantesSacramento();
+    } catch (err) {
+        console.error("Erro ao adicionar participante no sacramento:", err);
+        alert((err && err.message) || "Erro ao adicionar participante.");
+    }
+}
+
+async function removerParticipanteSacramento(paroquianoId) {
+    if (!modalParticipantesSacramentoId || !paroquianoId) return;
+    try {
+        await apiFetch(`${API_URL}/sacramentos/${modalParticipantesSacramentoId}/participantes/${paroquianoId}`, {
+            method: "DELETE"
+        });
+        listarParticipantesSacramento();
+    } catch (err) {
+        console.error("Erro ao remover participante no sacramento:", err);
+        alert((err && err.message) || "Erro ao remover participante.");
+    }
 }
 
 
@@ -697,6 +958,9 @@ async function buscarCelebrantes() {
             celebrantes = await response.json();
             preencherSelectCelebrantes("nova-celebracao-celebrante");
             preencherSelectCelebrantes("filtro-celebrante", filtroCelebranteId);
+            // Sacramentos
+            preencherSelectCelebrantes("novo-sacramento-celebrante");
+            preencherSelectCelebrantes("filtro-sacramente-celebrante", filtroSacramentoCelebranteId);
         }
     } catch (err) {
         console.error("Erro ao buscar celebrantes:", err);

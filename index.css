@@ -853,6 +853,15 @@ td.text-gray {
     padding: 12px;
 }
 
+/* Aplicar o mesmo layout ao formulário de sacramentos */
+#form-novo-sacramento{
+    display:flex;
+    flex-direction: column;
+    gap: 30px;
+    align-items: center;
+    padding: 12px;
+}
+
 .form-group {
     display: contents; /* permite que label e input entrem diretamente no grid */
 }
@@ -894,6 +903,28 @@ td.text-gray {
 }
 
 .mensagens-form.sucesso {
+    background: #ecfdf5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+/* Mensagens específicas de celebreções/sacramentos */
+.mensagens-celebracoes,
+.mensagens-sacramentos {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+}
+.mensagens-celebracoes.erro,
+.mensagens-sacramentos.erro {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+.mensagens-celebracoes.sucesso,
+.mensagens-sacramentos.sucesso {
     background: #ecfdf5;
     color: #065f46;
     border-color: #a7f3d0;

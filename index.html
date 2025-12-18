@@ -86,7 +86,7 @@
                     </svg>
                     <span>INTENÇÕES DE MISSA</span>
                 </button>
-                <button class="menu-item" onclick="setActiveMenu(this)">
+                <button class="menu-item" data-view="sacramentos" onclick="setActiveMenu(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14 2 14 8 20 8"/>
@@ -402,7 +402,8 @@
 </div>
                     </div>
                 </div>
-            <div id="intencoes-view" style="display: none;">
+            
+                <div id="intencoes-view" style="display: none;">
                 <div class="tables-grid">
                     <div class="table-card">
                         <div class="table-header">
@@ -450,6 +451,151 @@
                             <div id="intencoes-admin-mensagens" class="mensagens-form"></div>
                             <div id="intencoes-admin-lista"></div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+    <div id="sacramentos-view" style="display: none;">
+        <div class="tables-grid">
+            <div class="table-card">
+                <div class="table-header">
+                    <h3>NOVO SACRAMENTO</h3>
+                </div>
+                <div class="table-container form-new-celebration">
+                    <form id="form-novo-sacramento" onsubmit="criarSacramento(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="novo-sacramento-data">Data *</label>
+                            <input type="date" id="novo-sacramento-data" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="novo-sacramento-hora">Hora *</label>
+                            <input type="time" id="novo-sacramento-hora" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="novo-sacramento-tipo">Tipo *</label>
+                            <input type="text" id="novo-sacramento-tipo" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="novo-sacramento-celebrante">Celebrante *</label>
+                            <select id="novo-sacramento-celebrante" required>
+                                <!-- Preenchido via JS -->
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="novo-sacramento-local">Local</label>
+                            <input type="text" id="novo-sacramento-local" placeholder="Igreja Matriz, Capela X, ..." required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                Guardar Sacramento
+                            </button>                            
+                        </div>
+                    </form>
+                    <div id="disponibilidade-sacramento-msg" class="mensagens-disponibilidade"></div>
+                    <!-- Mensagens de erro / sucesso -->
+                    <div id="sacramentos-mensagens" class="mensagens-sacramentos"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-header">
+                <h3>PRÓXIMOS SACRAMENTOS</h3>
+                <button type="button" class="filter-toggle" onclick="toggleFiltroSacramentos(event)">
+                    Filtrar 
+                    <img src="Images/filter.svg" alt="Editar">
+                </button>
+            </div>
+
+            <div id="filtro-sacramentos-menu" class="filter-menu hidden">
+                <div class="filter-row">
+                    <label for="filtro-sacramente-celebrante">Celebrante</label>
+                    <select id="filtro-sacramente-celebrante">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                <div class="filter-row">
+                    <label for="filtro-sacramento-tipo">Sacramento</label>
+                    <input type="text" id="filtro-sacramento-tipo" placeholder="Matrimónio, Batismo...">
+                </div>
+                <div class="filter-actions">
+                    <button type="button" class="btn-secondary" onclick="limparFiltroSacramentos()">Limpar</button>
+                    <button type="button" class="btn-primary" onclick="aplicarFiltroSacramentos()">Aplicar</button>
+                </div>
+            </div>
+            
+            <div class="eventos-container" id="sacramentos-container-gerir">
+                <!-- Preenchido via JavaScript -->
+            </div>
+
+            <div id="confirm-sacramento-dialog" class="modal confirm-modal hidden">
+                <div class="modal-content">
+                    <h2>Confirmar ação</h2>
+                    <p id="confirm-sacramento-dialog-message"></p>
+                    <div class="confirm-actions">
+                        <button type="button" class="btn-secondary" id="confirm-sacramento-dialog-cancel">Cancelar</button>
+                        <button type="button" class="btn-danger" id="confirm-sacramento-dialog-ok">Remover</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modal-editor-sacramento" class="modal hidden">
+                <div class="modal-content">
+                    <h2>Editar Sacramento</h2>
+
+                    <form id="form-editar-sacramento">
+                        <div class="form-group">
+                            <label>Data:</label>
+                            <input type="date" id="edit-sacramento-data">
+                        </div>
+                        <div class="form-group">
+                            <label>Hora:</label>
+                            <input type="time" id="edit-sacramento-hora">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo:</label>
+                            <input type="text" id="edit-sacramento-tipo">
+                        </div>
+                        <div class="form-group">
+                            <label>Celebrante:</label>
+                            <select id="edit-sacramento-celebrante"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Local:</label>
+                            <input type="text" id="edit-sacramento-local">
+                        </div>
+                        <div id="editar-sacramento-disponibilidade-msg"></div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Guardar alterações</button>
+                            <button type="button" onclick="fecharModalEditarSacramento()" class="btn-primary">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Modal Participantes Sacramento-->
+            <div id="modal-participantes-sacramento" class="modal hidden">
+                <div class="modal-content">
+                    <h2>Participantes do Sacramento</h2>
+                    
+                    <div class="participantes-actions">
+                        <select id="participantes-sacramento-select-paroquiano">
+                            <option value="">Selecionar paroquiano...</option>
+                        </select>
+                        <button type="button" class="btn-primary" onclick="adicionarParticipanteSacramento()">Adicionar</button>
+                    </div>
+                    <div id="participantes-sacramento-lista-wrapper">
+                        <div id="participantes-sacramento-lista"></div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" onclick="fecharModalParticipantesSacramento()" class="btn-primary">Fechar</button>
                     </div>
                 </div>
             </div>

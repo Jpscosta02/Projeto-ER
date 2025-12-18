@@ -118,3 +118,106 @@ async function criarCelebracao(event) {
     }
 }
 
+// =============================
+//  DISPONIBILIDADE (SACRAMENTO)
+// =============================
+function mostrarDisponibilidadeSacramento(msg, estado) {
+    const box = document.getElementById("disponibilidade-sacramento-msg");
+    if (!box) return;
+
+    box.textContent = msg || "";
+    box.className = "mensagens-disponibilidade";
+
+    if (!msg) return;
+    if (estado === "livre") box.classList.add("livre");
+    else if (estado === "ocupado") box.classList.add("ocupado");
+}
+
+async function verificarDisponibilidadeDataHoraSacramento() {
+    const dataEl = document.getElementById("novo-sacramento-data");
+    const horaEl = document.getElementById("novo-sacramento-hora");
+    if (!dataEl || !horaEl) return;
+
+    const data = dataEl.value;
+    const hora = horaEl.value;
+    if (!data || !hora) {
+        mostrarDisponibilidadeSacramento("", null);
+        return;
+    }
+
+    try {
+        const params = new URLSearchParams({ data, hora });
+        const body = await apiFetch(`${API_URL}/sacramentos/disponibilidade?${params.toString()}`);
+        if (body.disponivel) {
+            mostrarDisponibilidadeSacramento("Data e hora livres.", "livre");
+        } else if (body.sacramento) {
+            const s = body.sacramento;
+            const info = `${s.tipo || "Sacramento"} às ${s.hora} em ${s.local || ""}`;
+            mostrarDisponibilidadeSacramento("Data e hora ocupadas. Já existe: " + info, "ocupado");
+        } else {
+            mostrarDisponibilidadeSacramento("Data e hora ocupadas.", "ocupado");
+        }
+    } catch (err) {
+        console.error("Erro ao verificar disponibilidade de sacramento:", err);
+        const msg = (err && (err.data?.mensagem || err.message)) || "Erro de comunicação ao verificar disponibilidade.";
+        mostrarDisponibilidadeSacramento(msg, "ocupado");
+    }
+}
+
+function mostrarMensagemSacramentos(msg, tipo = "erro") {
+    const box = document.getElementById("sacramentos-mensagens");
+    if (!box) return;
+    box.textContent = msg;
+    box.className = "mensagens-sacramentos";
+    if (tipo === "erro") box.classList.add("erro");
+    if (tipo === "sucesso") box.classList.add("sucesso");
+}
+
+async function criarSacramento(event) {
+    event.preventDefault();
+
+    // Evitar duplo envio/acidental (duplo clique)
+    if (window.__criandoSacramento) return;
+    window.__criandoSacramento = true;
+
+    const data = (document.getElementById("novo-sacramento-data") || {}).value;
+    const hora = (document.getElementById("novo-sacramento-hora") || {}).value;
+    const tipo = (document.getElementById("novo-sacramento-tipo") || {}).value;
+    const celebranteId = (document.getElementById("novo-sacramento-celebrante") || {}).value;
+    const local = (document.getElementById("novo-sacramento-local") || {}).value;
+
+    if (!data || !hora || !tipo || !celebranteId) {
+        mostrarMensagemSacramentos("Preencha todos os campos obrigatórios.", "erro");
+        return;
+    }
+
+    const submitBtn = (document.querySelector('#form-novo-sacramento button[type="submit"]'));
+    if (submitBtn) {
+        submitBtn.disabled = true;
+    }
+
+    try {
+        await apiFetch(`${API_URL}/sacramentos`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ data, hora, tipo, celebranteId, local })
+        });
+
+        mostrarMensagemSacramentos("Sacramento registado com sucesso!", "sucesso");
+        adicionarNotificacao(`Sacramento criado: ${formatCelebracaoResumo({ tipo, data, hora, local })}`);
+
+        const form = document.getElementById("form-novo-sacramento");
+        if (form) form.reset();
+        mostrarDisponibilidadeSacramento("", null);
+
+        await buscarSacramentos();
+        await buscarStats();
+    } catch (err) {
+        console.error("Erro ao criar sacramento:", err);
+        mostrarMensagemSacramentos((err && err.message) || "Erro de comunicação com o servidor.", "erro");
+    } finally {
+        window.__criandoSacramento = false;
+        if (submitBtn) submitBtn.disabled = false;
+    }
+}
+
