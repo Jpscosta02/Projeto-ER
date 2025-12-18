@@ -140,6 +140,9 @@ function mostrarVista(vista) {
 
     currentView = (views[vista] ? vista : "dashboard");
     atualizarTopBar(currentView);
+    if (currentView === "intencoes" && typeof window.atualizarIntencoesMissasDisponiveis === "function") {
+        window.atualizarIntencoesMissasDisponiveis();
+    }
     try {
         window.dispatchEvent(new CustomEvent("sige:view", { detail: { view: currentView } }));
     } catch {}
@@ -554,7 +557,7 @@ function carregarCelebracoes() {
             container.appendChild(div);
 
             const tipo = String(ev.tipo || "").toLowerCase();
-            if (container.id === "celebracoes-container" && tipo.includes("missa")) {
+            if (container.id === "celebracoes-container" && (tipo.includes("missa") || tipo.includes("eucar"))) {
                 const box = div.querySelector('[data-intencoes="true"]');
                 if (box) {
                     box.addEventListener("click", (e) => e.stopPropagation());

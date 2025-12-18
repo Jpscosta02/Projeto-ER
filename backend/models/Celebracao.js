@@ -186,10 +186,13 @@ async function getMissasPorData(data, db) {
     `SELECT c.*,
             ce.nome AS celebrante_nome
        FROM celebracoes c
-  LEFT JOIN celebrantes ce ON c.celebrante_id = ce.id
-      WHERE c.data = $1
-        AND LOWER(c.tipo) LIKE '%missa%'
-   ORDER BY c.hora ASC, c.id ASC`,
+   LEFT JOIN celebrantes ce ON c.celebrante_id = ce.id
+       WHERE c.data = $1
+         AND (
+               LOWER(COALESCE(c.tipo, '')) LIKE '%missa%'
+            OR LOWER(COALESCE(c.tipo, '')) LIKE '%eucar%'
+         )
+    ORDER BY c.hora ASC, c.id ASC`,
     [data]
   );
   return result.rows;
@@ -201,10 +204,13 @@ async function getMissasDisponiveis(db) {
     `SELECT c.*,
             ce.nome AS celebrante_nome
        FROM celebracoes c
-  LEFT JOIN celebrantes ce ON c.celebrante_id = ce.id
-      WHERE c.data >= CURRENT_DATE
-        AND LOWER(c.tipo) LIKE '%missa%'
-   ORDER BY c.data ASC, c.hora ASC, c.id ASC`
+   LEFT JOIN celebrantes ce ON c.celebrante_id = ce.id
+       WHERE c.data >= (CURRENT_DATE - 30)
+         AND (
+               LOWER(COALESCE(c.tipo, '')) LIKE '%missa%'
+            OR LOWER(COALESCE(c.tipo, '')) LIKE '%eucar%'
+         )
+    ORDER BY c.data ASC, c.hora ASC, c.id ASC`
   );
   return result.rows;
 }

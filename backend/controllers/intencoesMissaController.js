@@ -9,6 +9,16 @@ const {
 } = require('../models/IntencaoMissa');
 const { getCelebracaoPorId } = require('../models/Celebracao');
 
+function normalizarDataIso(valor) {
+  if (!valor) return null;
+  if (valor instanceof Date) return valor.toISOString().slice(0, 10);
+  const raw = String(valor);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return null;
+}
+
 async function submeterIntencaoMissa(req, res) {
   const { nome, intencao, dataPretendida, solicitanteEmail, celebracaoId } = req.body || {};
 
@@ -35,19 +45,15 @@ async function submeterIntencaoMissa(req, res) {
     }
 
     const tipo = String(celebracao.tipo || '').toLowerCase();
-    if (!tipo.includes('missa')) {
+    if (!tipo.includes('missa') && !tipo.includes('eucar')) {
       return res.status(400).json({ mensagem: 'A celebracao selecionada nao e uma missa.' });
     }
 
-    const dataCelebracao = celebracao.data ? String(celebracao.data).slice(0, 10) : null;
-    const dataNorm = dataPretendida ? String(dataPretendida).slice(0, 10) : dataCelebracao;
+    const dataCelebracao = normalizarDataIso(celebracao.data);
+    const dataNorm = normalizarDataIso(dataPretendida) || dataCelebracao;
 
     if (!dataNorm) {
       return res.status(400).json({ mensagem: 'Nao foi possivel determinar a data pretendida.' });
-    }
-
-    if (dataCelebracao && dataNorm && dataCelebracao !== dataNorm) {
-      return res.status(400).json({ mensagem: 'A missa selecionada nao corresponde a data pretendida.' });
     }
 
     const nova = await criarIntencaoMissa({
@@ -115,15 +121,10 @@ async function decidirIntencao(req, res) {
       }
 
       const tipo = String(celebracao.tipo || '').toLowerCase();
-      if (!tipo.includes('missa')) {
+      if (!tipo.includes('missa') && !tipo.includes('eucar')) {
         return res.status(400).json({ mensagem: 'Nao e possivel aprovar: celebracao associada nao e uma missa.' });
       }
 
-      const dataCelebracao = celebracao.data ? String(celebracao.data).slice(0, 10) : null;
-      const dataPretendida = existente.data_pretendida ? String(existente.data_pretendida).slice(0, 10) : null;
-      if (dataCelebracao && dataPretendida && dataCelebracao !== dataPretendida) {
-        return res.status(400).json({ mensagem: 'Nao e possivel aprovar: a missa associada nao e na data pretendida.' });
-      }
     }
 
     const atualizada = await decidirIntencaoMissa(Number(id), {

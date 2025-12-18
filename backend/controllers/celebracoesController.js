@@ -155,7 +155,7 @@ async function listarIntencoesCelebracao(req, res) {
     if (!celebracao) return res.status(404).json({ mensagem: 'Celebracao nao encontrada.' });
 
     const tipo = String(celebracao.tipo || '').toLowerCase();
-    if (!tipo.includes('missa')) {
+    if (!tipo.includes('missa') && !tipo.includes('eucar')) {
       return res.json([]);
     }
 

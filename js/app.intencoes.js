@@ -82,7 +82,7 @@ function preencherSelectMissas(selectEl, missas = []) {
     if (!missas.length) {
         const opt = document.createElement("option");
         opt.value = "";
-        opt.textContent = "Sem missa agendada nesta data.";
+        opt.textContent = "Sem missas disponíveis.";
         selectEl.appendChild(opt);
         return;
     }
@@ -95,11 +95,12 @@ function preencherSelectMissas(selectEl, missas = []) {
     missas.forEach(m => {
         const data = formatarDataIso(m.data);
         const hora = (m.hora || "").slice(0, 5);
+        const tipo = m.tipo || "Missa";
         const local = m.local || "local nao definido";
         const celebrante = m.celebrante_nome ? ` - ${m.celebrante_nome}` : "";
         const opt = document.createElement("option");
         opt.value = m.id;
-        opt.textContent = `${data} ${hora} - ${local}${celebrante}`;
+        opt.textContent = `${data} ${hora} - ${tipo} - ${local}${celebrante}`;
         selectEl.appendChild(opt);
     });
 
@@ -145,6 +146,9 @@ async function carregarMissasParaDataPretendida() {
         if (dataEl) dataEl.value = "";
     }
 }
+
+// Permite refresh quando o utilizador abre a vista "Intenções".
+window.atualizarIntencoesMissasDisponiveis = carregarMissasParaDataPretendida;
 
 function renderIntencoesPendentesAdmin(lista = []) {
     const card = document.getElementById("intencoes-admin-card");
