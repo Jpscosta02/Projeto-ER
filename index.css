@@ -48,6 +48,13 @@ body {
 .sidebar.collapsed .logo-container {
     opacity: 0;
     pointer-events: none;
+    max-width: 0;
+    overflow: hidden;
+    gap: 0;
+}
+
+.sidebar.collapsed .sidebar-header {
+    justify-content: center;
 }
 
 .logo-icon {
@@ -98,7 +105,12 @@ body {
 }
 
 .sidebar.collapsed .menu-label {
-    opacity: 0;
+    display: none;
+}
+
+.sidebar.collapsed .menu-item {
+    justify-content: center;
+    padding: 12px 0;
 }
 
 .menu-item {
@@ -162,7 +174,12 @@ body {
 }
 
 .sidebar.collapsed .menu-item span {
-    opacity: 0;
+    display: none;
+}
+
+.sidebar.collapsed .logout-btn {
+    justify-content: center;
+    gap: 0;
 }
 
 /* ========== MAIN CONTENT ========== */
@@ -1100,7 +1117,12 @@ img{
     height: 20px;
 }
 
-
+.documentos-section {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
 
 
 /* Responsivo */

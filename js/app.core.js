@@ -106,7 +106,8 @@ function mostrarVista(vista) {
     const views = {
         dashboard: document.getElementById("dashboard-view"),
         celebracoes: document.getElementById("celebracoes-view"),
-        intencoes: document.getElementById("intencoes-view")
+        intencoes: document.getElementById("intencoes-view"),
+        documentos: document.getElementById("documentos-view")
     };
 
     Object.values(views).forEach(el => {
@@ -143,6 +144,34 @@ function logout() {
     localStorage.removeItem("sige_user");
     window.location.href = "login.html";
 }
+
+function atualizarIconSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    const icon = document.getElementById("toggle-icon");
+    if (!sidebar || !icon) return;
+
+    const isCollapsed = sidebar.classList.contains("collapsed");
+    icon.innerHTML = isCollapsed
+        ? '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>'
+        : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    if (!sidebar) return;
+
+    sidebar.classList.toggle("collapsed");
+    localStorage.setItem("sige_sidebar_collapsed", sidebar.classList.contains("collapsed") ? "1" : "0");
+    atualizarIconSidebar();
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    const sidebar = document.getElementById("sidebar");
+    if (!sidebar) return;
+    const saved = localStorage.getItem("sige_sidebar_collapsed");
+    if (saved === "1") sidebar.classList.add("collapsed");
+    atualizarIconSidebar();
+});
 
 
 // =============================
@@ -435,6 +464,9 @@ async function buscarCelebracoes() {
         if (response.ok) {
             celebracoes = await response.json();
             carregarCelebracoes();
+            if (typeof window.atualizarDocumentosCelebracoes === "function") {
+                window.atualizarDocumentosCelebracoes();
+            }
         }
     } catch (err) {
         console.error("Erro ao buscar celebrações:", err);

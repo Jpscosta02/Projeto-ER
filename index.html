@@ -69,13 +69,6 @@
                     </svg>
                     <span>VISÃO GERAL</span>
                 </button>
-                <button class="menu-item" onclick="setActiveMenu(this)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                    </svg>
-                    <span>PAROQUIANOS</span>
-                </button>
                 <button class="menu-item" data-view="celebracoes" onclick="setActiveMenu(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -100,16 +93,7 @@
                     </svg>
                     <span>SACRAMENTOS</span>
                 </button>
-                <button class="menu-item" onclick="setActiveMenu(this)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                    <span>CELEBRANTES</span>
-                </button>
-                <button class="menu-item" onclick="setActiveMenu(this)">
+                <button class="menu-item" data-view="documentos" onclick="setActiveMenu(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14 2 14 8 20 8"/>
@@ -470,6 +454,46 @@
                 </div>
             </div>
 
+            <div id="documentos-view" style="display: none;">
+                <div class="tables-grid">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h3>DOCUMENTOS</h3>
+                        </div>
+                        <div class="table-container form-new-celebration documentos-section">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="docs-celebracao-select">Celebração</label>
+                                    <select id="docs-celebracao-select">
+                                        <option value="">Selecione uma celebração...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-primary" id="docs-export-excel" disabled>
+                                    Exportar participantes (Excel)
+                                </button>
+                                <button type="button" class="btn-secondary" id="docs-gerar-atestado" disabled>
+                                    Gerar atestado
+                                </button>
+                            </div>
+
+                            <div id="docs-mensagens" class="mensagens-form"></div>
+                        </div>
+                    </div>
+
+                    <div class="table-card" id="docs-preview-card" style="display: none;">
+                        <div class="table-header">
+                            <h3>PARTICIPANTES</h3>
+                        </div>
+                        <div class="table-container">
+                            <div id="docs-participantes-preview"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             </div> <!-- fim .content-area -->
         </div>
     </div>
@@ -479,5 +503,6 @@
     <script src="js/app.disponibilidade.js"></script>
     <script src="js/app.editar.js"></script>
     <script src="js/app.intencoes.js"></script>
+    <script src="js/app.documentos.js"></script>
 </body>
 </html>
