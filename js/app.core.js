@@ -183,6 +183,17 @@ function abrirModal(tipo) {
     }
 }
 
+function editarCelebracaoDashboard(id) {
+    const celebracoesMenuBtn = document.querySelector('.menu-item[data-view="celebracoes"]');
+    if (celebracoesMenuBtn) {
+        setActiveMenu(celebracoesMenuBtn);
+    } else {
+        mostrarVista("celebracoes");
+    }
+
+    setTimeout(() => abrirEditarCelebracao(id), 0);
+}
+
 
 // =============================
 //  BUSCAR DADOS INICIAIS
@@ -190,7 +201,6 @@ function abrirModal(tipo) {
 async function buscarDadosBackend() {
     await Promise.all([
         buscarParoquianos(),
-        buscarAniversariantes(),
         buscarCelebracoes(),
         buscarSacramentos(),
         buscarCelebrantes(),
@@ -484,6 +494,10 @@ function carregarCelebracoes() {
             const badgeEspecial = isEspecial ? '<span class="evento-badge evento-badge-especial">Especial</span>' : "";
             div.className = "evento-card" + (isEspecial ? " evento-card-especial" : "");
             const mostrarRemover = container.id === "celebracoes-container-gerir" && isAdmin;
+            const editarOnclick =
+                container.id === "celebracoes-container"
+                    ? `editarCelebracaoDashboard(${ev.id})`
+                    : `abrirEditarCelebracao(${ev.id})`;
             const estadoSlug = String(ev.estado_confirmacao || "pendente").toLowerCase();
             const badgeEstado = isEspecial
                 ? `<span class="evento-badge evento-badge-estado badge-${estadoSlug}">${formatarEstadoConfirmacao(ev.estado_confirmacao)}</span>`
@@ -501,29 +515,27 @@ function carregarCelebracoes() {
                     </h4>
                     <p>${ev.hora} - ${ev.local || ""}</p>
                     <span class="evento-tag">${ev.celebrante_nome || "Celebrante"}</span>
-                    <div class="evento-intencoes" data-intencoes="true" style="display:none;"></div>
+                    ${container.id === "celebracoes-container" ? '<div class="evento-intencoes" data-intencoes="true" style="display:none;"></div>' : ''}
                 </div>
 
                 <div class="evento-acoes-col">
-                    <div class="evento-tags">
-                        ${badgeEspecial}
-                        ${badgeEstado}
-                    </div>
-                    <div class="evento-acoes">
-                        <button type="button" class="btn-editar" onclick="abrirEditarCelebracao(${ev.id})" title="Editar">Editar &#9998;</button>
-                        ${mostrarRemover ? `<button type="button" class="btn-remover" onclick="removerCelebracao(${ev.id})" title="Remover">Remover &#128465;</button>` : ""}
-                    </div>
-                </div>
+                     <div class="evento-tags">
+                         ${badgeEspecial}
+                         ${badgeEstado}
+                     </div>
+                     <div class="evento-acoes">
+                         <button type="button" class="btn-editar" onclick="${editarOnclick}" title="Editar">Editar &#9998;</button>
+                         ${mostrarRemover ? `<button type="button" class="btn-remover" onclick="removerCelebracao(${ev.id})" title="Remover">Remover &#128465;</button>` : ""}
+                     </div>
+                 </div>
             `;
 
             container.appendChild(div);
 
             const tipo = String(ev.tipo || "").toLowerCase();
-            if (tipo.includes("missa")) {
+            if (container.id === "celebracoes-container" && tipo.includes("missa")) {
                 const box = div.querySelector('[data-intencoes="true"]');
                 if (box) {
-                    box.style.display = "block";
-                    box.textContent = "A carregar intenções...";
                     box.addEventListener("click", (e) => e.stopPropagation());
                     carregarIntencoesDaCelebracao(ev.id, box);
                 }
@@ -589,14 +601,19 @@ async function carregarIntencoesDaCelebracao(celebracaoId, containerEl) {
     if (!celebracaoId || !containerEl) return;
 
     try {
+        containerEl.style.display = "none";
+        containerEl.textContent = "";
+
         const lista = await apiFetch(`${API_URL}/celebracoes/${celebracaoId}/intencoes`);
         const itens = Array.isArray(lista) ? lista : [];
 
         if (!itens.length) {
-            containerEl.textContent = "Sem intenções aprovadas.";
+            containerEl.style.display = "none";
+            containerEl.textContent = "";
             return;
         }
 
+        containerEl.style.display = "block";
         containerEl.innerHTML =
             `<div class="evento-intencoes-titulo">Intenções</div>` +
             `<ul class="evento-intencoes-lista">` +
@@ -606,7 +623,8 @@ async function carregarIntencoesDaCelebracao(celebracaoId, containerEl) {
             `</ul>`;
     } catch (err) {
         console.error("Erro ao carregar intenções da celebração:", err);
-        containerEl.textContent = "Erro ao carregar intenções.";
+        containerEl.style.display = "none";
+        containerEl.textContent = "";
     }
 }
 

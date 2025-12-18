@@ -171,6 +171,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0;
 }
 
 /* Top Bar */
@@ -340,7 +341,8 @@ body {
 /* Content Area */
 .content-area {
     flex: 1;
-    overflow-y: hidden;
+    overflow-y: auto;
+    min-height: 0;
     padding: 24px;
 }
 
