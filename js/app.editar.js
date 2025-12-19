@@ -267,6 +267,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 let sacramentoEditarId = null;
 let sacramentoEditarOriginalData = null;
 let sacramentoEditarOriginalHora = null;
+let sacramentoEditarOriginalCelebranteId = null;
 
 function abrirEditarSacramento(id) {
     const modal = document.getElementById("modal-editor-sacramento");
@@ -274,6 +275,7 @@ function abrirEditarSacramento(id) {
     const sacramento = sacramentos.find(s => Number(s.id) === Number(id));
     if (!sacramento) return;
     sacramentoEditarId = Number(id);
+    sacramentoEditarOriginalCelebranteId = sacramento.celebrante_id ?? sacramento.celebranteId ?? null;
     const inputData = document.getElementById("edit-sacramento-data");
     const inputHora = document.getElementById("edit-sacramento-hora");
     const inputTipo = document.getElementById("edit-sacramento-tipo");
@@ -287,7 +289,7 @@ function abrirEditarSacramento(id) {
 
     sacramentoEditarOriginalData = inputData ? inputData.value : null;
     sacramentoEditarOriginalHora = inputHora ? inputHora.value : null;
-    preencherSelectCelebrantes("edit-sacramento-celebrante", sacramento.celebrante_id);
+    preencherSelectCelebrantes("edit-sacramento-celebrante", sacramentoEditarOriginalCelebranteId);
 
     const msgBox = document.getElementById("editar-sacramento-disponibilidade-msg");
     if (msgBox) { msgBox.textContent = ""; msgBox.className = ""; }
@@ -301,6 +303,7 @@ function fecharModalEditarSacramento() {
     sacramentoEditarId = null;
     sacramentoEditarOriginalData = null;
     sacramentoEditarOriginalHora = null;
+    sacramentoEditarOriginalCelebranteId = null;
 }
 
 async function verificarDisponibilidadeEditarSacramento() {
@@ -340,7 +343,7 @@ async function submeterEdicaoSacramento(event) {
     const data = (document.getElementById("edit-sacramento-data") || {}).value;
     const hora = (document.getElementById("edit-sacramento-hora") || {}).value;
     const tipo = (document.getElementById("edit-sacramento-tipo") || {}).value;
-    const celebranteId = (document.getElementById("edit-sacramento-celebrante") || {}).value;
+    const celebranteId = (document.getElementById("edit-sacramento-celebrante") || {}).value || sacramentoEditarOriginalCelebranteId;
     const local = (document.getElementById("edit-sacramento-local") || {}).value;
     if (!data || !hora || !tipo || !celebranteId) { alert("Preencha todos os campos obrigatórios."); return; }
     const msgBox = document.getElementById("editar-sacramento-disponibilidade-msg");

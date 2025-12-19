@@ -463,7 +463,7 @@
                 </div>
                 <div class="table-container form-new-celebration">
                     <form id="form-novo-sacramento" onsubmit="criarSacramento(event)">
-                    <div class="form-grid">
+                        <div class="form-grid">
                         <div class="form-group">
                             <label for="novo-sacramento-data">Data *</label>
                             <input type="date" id="novo-sacramento-data" required>
@@ -490,6 +490,7 @@
                             <label for="novo-sacramento-local">Local</label>
                             <input type="text" id="novo-sacramento-local" placeholder="Igreja Matriz, Capela X, ..." required>
                         </div>
+                        </div>
 
                         <div class="form-actions">
                             <button type="submit" class="btn-primary">
@@ -502,7 +503,6 @@
                     <div id="sacramentos-mensagens" class="mensagens-sacramentos"></div>
                 </div>
             </div>
-        </div>
 
         <div class="table-card">
             <div class="table-header">
@@ -600,7 +600,11 @@
                 </div>
             </div>
 
-            <div id="documentos-view" style="display: none;">
+        </div>
+        </div>
+    </div>
+
+    <div id="documentos-view" style="display: none;">
                 <div class="tables-grid">
                     <div class="table-card" id="docs-filtro-card">
                         <div class="table-header">
