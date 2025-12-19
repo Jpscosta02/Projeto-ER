@@ -1,0 +1,9 @@
+{
+  "name": "projeto-er",
+  "private": true,
+  "scripts": {
+    "postinstall": "npm install --prefix backend",
+    "dev": "npm run dev --prefix backend",
+    "start": "npm start --prefix backend"
+  }
+}
